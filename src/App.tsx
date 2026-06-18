@@ -6,7 +6,7 @@ import LoginModal from './components/LoginModal';
 import AdminDashboard from './components/AdminDashboard';
 import { 
   Compass, Award, Star, MessageSquare, Lock, 
-  MapPin, Phone, Mail, ShieldCheck, LogOut
+  MapPin, Phone, Mail, ShieldCheck, LogOut, QrCode, X
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import './App.css';
@@ -18,6 +18,7 @@ function App() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const [systemLogo, setSystemLogo] = useState<string | null>(null);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
 
   // Load system logo settings on component mount
   useEffect(() => {
@@ -254,6 +255,9 @@ function App() {
                     </button>
                     <button onClick={() => setActiveView('evaluation')} className="btn btn-secondary" style={{ padding: '0.9rem 1.8rem', fontSize: '1rem' }}>
                       Đánh giá khóa học
+                    </button>
+                    <button onClick={() => setIsQrModalOpen(true)} className="btn btn-outline" style={{ padding: '0.9rem 1.8rem', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', borderColor: 'var(--primary-450)', color: 'var(--primary-800)', backgroundColor: 'rgba(254, 243, 199, 0.35)' }}>
+                      Quét QR làm bài <QrCode size={18} />
                     </button>
                   </div>
                 </div>
@@ -499,6 +503,87 @@ function App() {
         onClose={() => setIsLoginModalOpen(false)}
         onLoginSuccess={handleLoginSuccess}
       />
+
+      {isQrModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(28, 25, 23, 0.65)',
+          backdropFilter: 'blur(6px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1100,
+          animation: 'fadeIn 0.25s ease-out'
+        }}>
+          <div className="glass-card" style={{ 
+            width: '90%', 
+            maxWidth: '400px', 
+            padding: '2.5rem 2rem', 
+            textAlign: 'center',
+            border: '2px solid var(--primary-400)',
+            boxShadow: 'var(--shadow-xl)',
+            position: 'relative',
+            backgroundColor: '#ffffff'
+          }}>
+            <button 
+              onClick={() => setIsQrModalOpen(false)} 
+              style={{ 
+                position: 'absolute', 
+                top: '1rem', 
+                right: '1rem', 
+                background: 'rgba(0,0,0,0.05)', 
+                border: 'none', 
+                color: 'var(--neutral-600)', 
+                cursor: 'pointer',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'var(--transition-smooth)'
+              }}
+              className="pulse-hover"
+            >
+              <X size={18} />
+            </button>
+            <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: 'var(--neutral-850)', fontWeight: 800 }}>Quét Mã QR Làm Bài</h3>
+            <p style={{ fontSize: '0.875rem', color: 'var(--neutral-500)', marginBottom: '1.75rem', lineHeight: 1.5 }}>
+              Sử dụng camera điện thoại hoặc Zalo để quét mã QR và truy cập hệ thống làm bài trực tuyến nhanh chóng.
+            </p>
+            <div style={{
+              display: 'inline-flex',
+              padding: '1.25rem',
+              backgroundColor: '#ffffff',
+              borderRadius: 'var(--radius-lg)',
+              border: '1.5px solid var(--primary-200)',
+              marginBottom: '1.5rem',
+              boxShadow: '0 8px 20px rgba(146, 64, 14, 0.05)'
+            }}>
+              <img 
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(window.location.href)}`} 
+                alt="QR Code Link" 
+                style={{ width: '200px', height: '200px', display: 'block' }}
+              />
+            </div>
+            <div style={{ 
+              fontSize: '0.8rem', 
+              color: 'var(--primary-700)', 
+              wordBreak: 'break-all', 
+              fontWeight: 700,
+              backgroundColor: 'var(--primary-100)',
+              padding: '0.5rem 0.75rem',
+              borderRadius: 'var(--radius-sm)'
+            }}>
+              {window.location.href}
+            </div>
+          </div>
+        </div>
+      )}
 
       <style dangerouslySetInnerHTML={{__html: `
         .spin-slow {
