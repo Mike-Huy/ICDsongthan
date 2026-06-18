@@ -6,7 +6,7 @@ import LoginModal from './components/LoginModal';
 import AdminDashboard from './components/AdminDashboard';
 import { 
   Compass, Award, Star, MessageSquare, Lock, 
-  MapPin, Phone, Mail, ShieldCheck, LogOut, QrCode, X
+  ShieldCheck, LogOut, QrCode, X
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import './App.css';
@@ -433,78 +433,23 @@ function App() {
       {/* 3. FOOTER */}
       <footer style={{
         backgroundColor: 'var(--neutral-900)',
-        color: 'var(--neutral-300)',
-        padding: '3.5rem 0 2rem',
+        color: '#ffffff',
+        padding: '1.5rem 0',
         borderTop: '5px solid var(--primary-500)'
       }}>
         <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2.5rem', marginBottom: '3rem' }}>
-            
-            {/* Footer Column 1 */}
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
-                {systemLogo ? (
-                  <img src={systemLogo} alt="ONEX Logo" style={{ height: '36px', maxWidth: '160px', objectFit: 'contain' }} />
-                ) : (
-                  <>
-                    <div style={{ backgroundColor: 'var(--primary-500)', color: 'var(--neutral-900)', padding: '0.4rem', borderRadius: 'var(--radius-sm)' }}>
-                      <Compass size={18} />
-                    </div>
-                    <strong style={{ fontSize: '1.2rem', color: '#ffffff', letterSpacing: '-0.02em' }}>ONEX Training</strong>
-                  </>
-                )}
-              </div>
-              <p style={{ fontSize: '0.85rem', color: 'var(--neutral-400)', lineHeight: 1.6 }}>
-                Đơn vị hàng đầu về đào tạo thực chiến ngành Logistics, quản lý chuỗi cung ứng và thủ tục hải quan tại Việt Nam.
-              </p>
-            </div>
-
-            {/* Footer Column 2 */}
-            <div>
-              <strong style={{ display: 'block', color: '#ffffff', marginBottom: '1.25rem', fontSize: '0.95rem' }}>Thông tin khóa học</strong>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.65rem', fontSize: '0.85rem', color: 'var(--neutral-400)' }}>
-                <li>• Quản trị Logistics & Chuỗi cung ứng</li>
-                <li>• Khai báo hải quan điện tử Vnaccs</li>
-                <li>• Nghiệp vụ Kho bãi & Giao nhận ICD</li>
-                <li>• Thanh toán quốc tế thực hành</li>
-              </ul>
-            </div>
-
-            {/* Footer Column 3 */}
-            <div>
-              <strong style={{ display: 'block', color: '#ffffff', marginBottom: '1.25rem', fontSize: '0.95rem' }}>Liên hệ hỗ trợ</strong>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.85rem', color: 'var(--neutral-400)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <MapPin size={14} style={{ color: 'var(--primary-400)' }} />
-                  <span>Khu công nghệ cao Thủ Đức, TP. Hồ Chí Minh</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Phone size={14} style={{ color: 'var(--primary-400)' }} />
-                  <span>+84 (0) 28 1234 5678</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Mail size={14} style={{ color: 'var(--primary-400)' }} />
-                  <span>info@onexlogistics.edu.vn</span>
-                </div>
-              </div>
-            </div>
-
-          </div>
-
           {/* Bottom Footer Credits */}
           <div style={{
-            borderTop: '1px solid var(--neutral-800)',
-            paddingTop: '1.5rem',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
             flexWrap: 'wrap',
             gap: '1rem',
-            fontSize: '0.8rem',
-            color: 'var(--neutral-500)'
+            fontSize: '0.85rem',
+            color: '#ffffff'
           }}>
             <span>© 2026 ONEX Training Academy. All rights reserved.</span>
-            <div style={{ display: 'flex', gap: '1rem' }}>
+            <div style={{ display: 'flex', gap: '1.5rem' }}>
               <span style={{ cursor: 'pointer' }}>Điều khoản sử dụng</span>
               <span style={{ cursor: 'pointer' }}>Chính sách bảo mật</span>
             </div>
