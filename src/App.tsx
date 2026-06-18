@@ -390,7 +390,7 @@ function App() {
             </section>
 
             {/* Course Features / Statistics */}
-            <section className="section-padding gradient-bg" style={{ borderTop: '1px solid var(--primary-200)', borderBottom: '1px solid var(--primary-200)' }}>
+            <section className="gradient-bg" style={{ padding: '2.5rem 0', borderTop: '1px solid var(--primary-200)', borderBottom: '1px solid var(--primary-200)' }}>
               <div className="container">
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '2.5rem', textAlign: 'center' }}>
                   <div>
