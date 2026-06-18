@@ -27,7 +27,7 @@ const FALLBACK_EVALUATIONS: EvaluationQuestion[] = [
   },
   {
     id: 4,
-    question_text: 'Mức độ hài lòng chung của bạn về chương trình đào tạo ONEX Logistics?',
+    question_text: 'Mức độ hài lòng chung của bạn về chương trình đào tạo ONEX Training?',
     question_type: 'rating'
   },
   {
@@ -160,7 +160,7 @@ export default function EvaluationSection() {
             </div>
             <h2 style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>Đánh Giá Khóa Học Logistics</h2>
             <p style={{ maxWidth: '600px', margin: '0 auto' }}>
-              Ý kiến của bạn sẽ giúp ONEX Logistics nâng cao chất lượng bài giảng, chương trình đào tạo và dịch vụ hỗ trợ học viên tốt hơn.
+              Ý kiến của bạn sẽ giúp ONEX Training nâng cao chất lượng bài giảng, chương trình đào tạo và dịch vụ hỗ trợ học viên tốt hơn.
             </p>
           </div>
 
@@ -335,7 +335,7 @@ export default function EvaluationSection() {
           </div>
           <h2 style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>Gửi Đánh Giá Thành Công!</h2>
           <p style={{ maxWidth: '500px', margin: '0 auto 2rem', color: 'var(--neutral-600)' }}>
-            Cảm ơn học viên <strong>{fullname}</strong> đã dành thời gian đóng góp ý kiến. Những phản hồi quý báu của bạn sẽ giúp khóa học ONEX Logistics ngày càng hoàn thiện hơn.
+            Cảm ơn học viên <strong>{fullname}</strong> đã dành thời gian đóng góp ý kiến. Những phản hồi quý báu của bạn sẽ giúp khóa học ONEX Training ngày càng hoàn thiện hơn.
           </p>
           <button
             onClick={() => {

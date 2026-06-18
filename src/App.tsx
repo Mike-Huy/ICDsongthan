@@ -245,7 +245,7 @@ function App() {
                   </h1>
                   
                   <p style={{ fontSize: '1.15rem', color: 'var(--neutral-600)', marginBottom: '2.5rem', maxWidth: '650px', lineHeight: 1.6 }}>
-                    Chào mừng bạn đến với hệ thống kiểm tra và đánh giá kết quả học tập dành cho học viên ONEX Logistics. Hãy thực hiện bài thu hoạch kiến thức và gửi đóng góp ý kiến để hoàn thiện khóa học tốt hơn.
+                    Chào mừng bạn đến với hệ thống kiểm tra và đánh giá kết quả học tập dành cho học viên ONEX Training. Hãy thực hiện bài thu hoạch kiến thức và gửi đóng góp ý kiến để hoàn thiện khóa học tốt hơn.
                   </p>
 
                   <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
@@ -345,7 +345,7 @@ function App() {
                     </div>
                     <h3 style={{ fontSize: '1.35rem', marginBottom: '0.75rem', color: 'var(--neutral-800)' }}>2. Đánh Giá Khóa Học</h3>
                     <p style={{ color: 'var(--neutral-500)', fontSize: '0.95rem', marginBottom: '2rem', flex: 1 }}>
-                      Đánh giá mức độ hài lòng về giáo trình, giảng viên và điều kiện học tập. Đóng góp ý kiến tự luận để ONEX Logistics cải tiến dịch vụ giảng dạy.
+                      Đánh giá mức độ hài lòng về giáo trình, giảng viên và điều kiện học tập. Đóng góp ý kiến tự luận để ONEX Training cải tiến dịch vụ giảng dạy.
                     </p>
                     <button onClick={() => setActiveView('evaluation')} className="btn btn-secondary" style={{ width: '100%' }}>
                       Khảo sát đánh giá
@@ -431,7 +431,7 @@ function App() {
                     <div style={{ backgroundColor: 'var(--primary-500)', color: 'var(--neutral-900)', padding: '0.4rem', borderRadius: 'var(--radius-sm)' }}>
                       <Compass size={18} />
                     </div>
-                    <strong style={{ fontSize: '1.2rem', color: '#ffffff', letterSpacing: '-0.02em' }}>ONEX Logistics</strong>
+                    <strong style={{ fontSize: '1.2rem', color: '#ffffff', letterSpacing: '-0.02em' }}>ONEX Training</strong>
                   </>
                 )}
               </div>
@@ -484,7 +484,7 @@ function App() {
             fontSize: '0.8rem',
             color: 'var(--neutral-500)'
           }}>
-            <span>© 2026 ONEX Logistics Academy. All rights reserved.</span>
+            <span>© 2026 ONEX Training Academy. All rights reserved.</span>
             <div style={{ display: 'flex', gap: '1rem' }}>
               <span style={{ cursor: 'pointer' }}>Điều khoản sử dụng</span>
               <span style={{ cursor: 'pointer' }}>Chính sách bảo mật</span>

@@ -900,7 +900,7 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
       <aside className="glass" style={{ borderRadius: 'var(--radius-lg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', border: '1px solid var(--primary-200)' }}>
         <div style={{ textAlign: 'center', paddingBottom: '1rem', borderBottom: '1px solid var(--primary-200)' }}>
           <div style={{ fontSize: '0.85rem', color: 'var(--primary-700)', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Bảng quản lý</div>
-          <div style={{ fontSize: '1.15rem', color: 'var(--neutral-800)', fontWeight: 800 }}>ONEX Logistics</div>
+          <div style={{ fontSize: '1.15rem', color: 'var(--neutral-800)', fontWeight: 800 }}>ONEX Training</div>
         </div>
 
         {/* Navigation Tabs */}

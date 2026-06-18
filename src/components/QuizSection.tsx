@@ -22,7 +22,7 @@ interface Quiz {
 const FALLBACK_QUIZ: Quiz = {
   id: 1,
   title: 'Bài Thu Hoạch Kiến Thức Logistics Cơ Bản',
-  description: 'Bài trắc nghiệm đánh giá kiến thức cơ bản về chuỗi cung ứng, vận tải, và quản trị kho bãi dành cho học viên chương trình đào tạo ONEX Logistics.',
+  description: 'Bài trắc nghiệm đánh giá kiến thức cơ bản về chuỗi cung ứng, vận tải, và quản trị kho bãi dành cho học viên chương trình đào tạo ONEX Training.',
   duration_minutes: 15,
 };
 

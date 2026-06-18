@@ -144,7 +144,7 @@ export default function FeedbackSection() {
           </div>
           <h2 style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>Gửi Góp Ý Thành Công!</h2>
           <p style={{ maxWidth: '500px', margin: '0 auto 2rem', color: 'var(--neutral-600)' }}>
-            Cảm ơn bạn đã gửi ý kiến đóng góp cho ONEX Logistics. Ban quản lý chương trình học sẽ xem xét phản hồi của bạn và phản hồi lại sớm nhất có thể qua Email hoặc Điện thoại.
+            Cảm ơn bạn đã gửi ý kiến đóng góp cho ONEX Training. Ban quản lý chương trình học sẽ xem xét phản hồi của bạn và phản hồi lại sớm nhất có thể qua Email hoặc Điện thoại.
           </p>
           <button onClick={handleReset} className="btn btn-primary">
             Gửi thêm góp ý khác
