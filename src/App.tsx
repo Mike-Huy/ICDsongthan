@@ -231,7 +231,7 @@ function App() {
         {activeView === 'home' && (
           <div>
             {/* Hero Section */}
-            <section className="gradient-bg" style={{ padding: '6rem 0 5rem', borderBottom: '1px solid var(--primary-200)' }}>
+            <section className="gradient-bg" style={{ padding: '3rem 0 3.5rem', borderBottom: '1px solid var(--primary-200)' }}>
               <div className="container" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '3rem', alignItems: 'center' }}>
                 
                 {/* Hero Text */}
@@ -281,6 +281,24 @@ function App() {
                     border: '2px solid rgba(251, 191, 36, 0.4)',
                     boxShadow: 'var(--shadow-xl)'
                   }}>
+                    <button 
+                      onClick={() => alert("Chương trình đào tạo A.I. Logistics thực chiến tại ICD Sóng Thần giúp học viên làm chủ các ứng dụng Trí Tuệ Nhân Tạo để tối ưu hóa quản lý chuỗi cung ứng, tự động hóa quy trình kho bãi, và nâng cao hiệu quả vận tải.")}
+                      className="btn btn-outline"
+                      style={{
+                        position: 'absolute',
+                        top: '0.75rem',
+                        right: '0.75rem',
+                        fontSize: '0.7rem',
+                        padding: '0.2rem 0.5rem',
+                        borderColor: 'var(--primary-400)',
+                        backgroundColor: 'var(--primary-100)',
+                        color: 'var(--primary-800)',
+                        fontWeight: 'bold',
+                        borderRadius: 'var(--radius-sm)'
+                      }}
+                    >
+                      Tìm hiểu
+                    </button>
                     <div style={{ display: 'inline-flex', padding: '1.25rem', backgroundColor: 'var(--primary-300)', color: 'var(--neutral-800)', borderRadius: '50%', marginBottom: '1.5rem' }}>
                       <Compass size={48} className="spin-slow" />
                     </div>
