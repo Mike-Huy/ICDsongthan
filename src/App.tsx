@@ -249,15 +249,30 @@ function App() {
                     Chào mừng bạn đến với hệ thống kiểm tra và đánh giá kết quả học tập dành cho học viên ONEX Training. Hãy thực hiện bài thu hoạch kiến thức và gửi đóng góp ý kiến để hoàn thiện khóa học tốt hơn.
                   </p>
 
-                  <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
                     <button onClick={() => setActiveView('quiz')} className="btn btn-primary" style={{ padding: '0.9rem 1.8rem', fontSize: '1rem' }}>
-                      Bắt đầu làm bài thu hoạch <Award size={18} />
+                      Bài thu hoạch <Award size={18} />
                     </button>
                     <button onClick={() => setActiveView('evaluation')} className="btn btn-secondary" style={{ padding: '0.9rem 1.8rem', fontSize: '1rem' }}>
                       Đánh giá khóa học
                     </button>
-                    <button onClick={() => setIsQrModalOpen(true)} className="btn btn-outline" style={{ padding: '0.9rem 1.8rem', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', borderColor: 'var(--primary-450)', color: 'var(--primary-800)', backgroundColor: 'rgba(254, 243, 199, 0.35)' }}>
-                      Quét QR làm bài <QrCode size={18} />
+                    <button 
+                      onClick={() => setIsQrModalOpen(true)} 
+                      className="btn btn-outline" 
+                      title="Quét QR làm bài bằng điện thoại"
+                      style={{ 
+                        padding: '0.9rem', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        borderColor: 'var(--primary-400)', 
+                        color: 'var(--primary-800)', 
+                        backgroundColor: 'rgba(254, 243, 199, 0.35)',
+                        aspectRatio: '1',
+                        minWidth: '46px'
+                      }}
+                    >
+                      <QrCode size={20} />
                     </button>
                   </div>
                 </div>
