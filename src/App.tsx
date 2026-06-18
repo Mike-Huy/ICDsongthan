@@ -284,7 +284,7 @@ function App() {
                     <div style={{ display: 'inline-flex', padding: '1.25rem', backgroundColor: 'var(--primary-300)', color: 'var(--neutral-800)', borderRadius: '50%', marginBottom: '1.5rem' }}>
                       <Compass size={48} className="spin-slow" />
                     </div>
-                    <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem', color: 'var(--neutral-800)' }}>Logistics Quốc Tế</h3>
+                    <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem', color: 'var(--neutral-800)' }}>A.I. Logistics thực chiến</h3>
                     <p style={{ fontSize: '0.875rem', color: 'var(--neutral-500)', marginBottom: '1.5rem' }}>
                       Quản lý chuỗi cung ứng, Vận tải đường biển, Hàng không, Thủ tục hải quan và Lưu kho bãi.
                     </p>
@@ -302,12 +302,7 @@ function App() {
             {/* Three Action Cards Section */}
             <section className="section-padding" style={{ backgroundColor: '#ffffff' }}>
               <div className="container">
-                <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
-                  <h2 style={{ fontSize: '2.25rem', color: 'var(--neutral-800)', marginBottom: '0.75rem' }}>Các Hoạt Động Cho Học Viên</h2>
-                  <p style={{ maxWidth: '600px', margin: '0 auto', color: 'var(--neutral-500)' }}>
-                    Chọn một trong ba hoạt động chính dưới đây để tiếp tục tiến trình hoàn thành chương trình đào tạo của bạn.
-                  </p>
-                </div>
+
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
                   
