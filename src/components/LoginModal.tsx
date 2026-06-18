@@ -237,10 +237,6 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginMod
           >
             {isLoading ? 'Đang xác thực...' : 'Đăng nhập'}
           </button>
-
-          <div style={{ textAlign: 'center', marginTop: '1.25rem', fontSize: '0.75rem', color: 'var(--neutral-400)' }}>
-            Tài khoản dùng thử: <code style={{ color: 'var(--primary-700)', fontWeight: 'bold' }}>onex_sadmin</code> / mật khẩu: <code style={{ color: 'var(--primary-700)', fontWeight: 'bold' }}>admin123</code>
-          </div>
         </form>
       </div>
     </div>
