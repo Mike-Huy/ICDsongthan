@@ -1,0 +1,504 @@
+import { useState, useEffect } from 'react';
+import QuizSection from './components/QuizSection';
+import EvaluationSection from './components/EvaluationSection';
+import FeedbackSection from './components/FeedbackSection';
+import LoginModal from './components/LoginModal';
+import AdminDashboard from './components/AdminDashboard';
+import { 
+  Compass, Award, Star, MessageSquare, Lock, 
+  MapPin, Phone, Mail, ShieldCheck, LogOut
+} from 'lucide-react';
+import { supabase } from './supabaseClient';
+import './App.css';
+
+type ActiveView = 'home' | 'quiz' | 'evaluation' | 'feedback' | 'admin';
+
+function App() {
+  const [activeView, setActiveView] = useState<ActiveView>('home');
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [systemLogo, setSystemLogo] = useState<string | null>(null);
+
+  // Load system logo settings on component mount
+  useEffect(() => {
+    async function loadSystemLogo() {
+      try {
+        const { data, error } = await supabase
+          .from('onex_settings')
+          .select('value')
+          .eq('key', 'system_logo')
+          .maybeSingle();
+        
+        if (!error && data) {
+          setSystemLogo(data.value);
+        }
+      } catch (err) {
+        console.error("Error loading system logo:", err);
+      }
+    }
+    loadSystemLogo();
+  }, []);
+
+  const handleLoginSuccess = () => {
+    setIsAdminLoggedIn(true);
+    setActiveView('admin');
+  };
+
+  const handleAdminLogout = () => {
+    setIsAdminLoggedIn(false);
+    setActiveView('home');
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      
+      {/* 1. NAVBAR */}
+      <header className="glass" style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
+        borderBottom: '1px solid rgba(254, 243, 199, 0.8)',
+        boxShadow: 'var(--shadow-sm)'
+      }}>
+        <div className="container" style={{
+          height: '75px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          {/* Logo */}
+          <div 
+            onClick={() => setActiveView('home')} 
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.75rem', 
+              cursor: 'pointer' 
+            }}
+          >
+            {systemLogo ? (
+              <img src={systemLogo} alt="ONEX Logo" style={{ height: '48px', maxWidth: '200px', objectFit: 'contain' }} />
+            ) : (
+              <>
+                <div style={{
+                  backgroundColor: 'var(--primary-500)',
+                  color: 'var(--neutral-900)',
+                  padding: '0.6rem',
+                  borderRadius: 'var(--radius-md)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: 'var(--shadow-sm)'
+                }}>
+                  <Compass size={24} style={{ transform: 'rotate(15deg)' }} />
+                </div>
+                <div>
+                  <span style={{ 
+                    fontSize: '1.25rem', 
+                    fontWeight: 800, 
+                    color: 'var(--neutral-800)',
+                    letterSpacing: '-0.02em',
+                    lineHeight: 1
+                  }}>ONEX</span>
+                  <span style={{ 
+                    display: 'block', 
+                    fontSize: '0.75rem', 
+                    fontWeight: 600, 
+                    color: 'var(--primary-600)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.1em'
+                  }}>Logistics Academy</span>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Central Navigation Tabs */}
+          {activeView !== 'admin' && (
+            <nav style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+              <button 
+                onClick={() => setActiveView('home')}
+                className={`btn btn-ghost ${activeView === 'home' ? 'active' : ''}`}
+                style={{
+                  fontSize: '0.9rem',
+                  padding: '0.5rem 1rem',
+                  fontWeight: activeView === 'home' ? 700 : 500,
+                  color: activeView === 'home' ? 'var(--primary-700)' : 'var(--neutral-600)',
+                  backgroundColor: activeView === 'home' ? 'var(--primary-100)' : 'transparent',
+                }}
+              >
+                Trang chủ
+              </button>
+              <button 
+                onClick={() => setActiveView('quiz')}
+                className={`btn btn-ghost ${activeView === 'quiz' ? 'active' : ''}`}
+                style={{
+                  fontSize: '0.9rem',
+                  padding: '0.5rem 1rem',
+                  fontWeight: activeView === 'quiz' ? 700 : 500,
+                  color: activeView === 'quiz' ? 'var(--primary-700)' : 'var(--neutral-600)',
+                  backgroundColor: activeView === 'quiz' ? 'var(--primary-100)' : 'transparent',
+                }}
+              >
+                Bài thu hoạch
+              </button>
+              <button 
+                onClick={() => setActiveView('evaluation')}
+                className={`btn btn-ghost ${activeView === 'evaluation' ? 'active' : ''}`}
+                style={{
+                  fontSize: '0.9rem',
+                  padding: '0.5rem 1rem',
+                  fontWeight: activeView === 'evaluation' ? 700 : 500,
+                  color: activeView === 'evaluation' ? 'var(--primary-700)' : 'var(--neutral-600)',
+                  backgroundColor: activeView === 'evaluation' ? 'var(--primary-100)' : 'transparent',
+                }}
+              >
+                Đánh giá khóa học
+              </button>
+              <button 
+                onClick={() => setActiveView('feedback')}
+                className={`btn btn-ghost ${activeView === 'feedback' ? 'active' : ''}`}
+                style={{
+                  fontSize: '0.9rem',
+                  padding: '0.5rem 1rem',
+                  fontWeight: activeView === 'feedback' ? 700 : 500,
+                  color: activeView === 'feedback' ? 'var(--primary-700)' : 'var(--neutral-600)',
+                  backgroundColor: activeView === 'feedback' ? 'var(--primary-100)' : 'transparent',
+                }}
+              >
+                Góp ý
+              </button>
+            </nav>
+          )}
+
+          {/* Right Action: Login / Admin Dashboard Toggle */}
+          <div>
+            {isAdminLoggedIn ? (
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <button 
+                  onClick={handleAdminLogout}
+                  className="btn btn-outline"
+                  style={{
+                    fontSize: '0.85rem',
+                    padding: '0.5rem 1rem',
+                    borderColor: 'var(--error)',
+                    color: 'var(--error)',
+                    backgroundColor: 'rgba(239, 68, 68, 0.05)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem'
+                  }}
+                >
+                  <LogOut size={14} /> Logout
+                </button>
+                <button 
+                  onClick={() => setActiveView(activeView === 'admin' ? 'home' : 'admin')}
+                  className="btn btn-secondary"
+                  style={{
+                    fontSize: '0.85rem',
+                    padding: '0.5rem 1rem',
+                    borderColor: 'var(--primary-400)',
+                    backgroundColor: 'var(--primary-100)',
+                    color: 'var(--primary-800)'
+                  }}
+                >
+                  <ShieldCheck size={16} /> {activeView === 'admin' ? 'Trang chủ' : 'Bảng Quản trị'}
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={() => setIsLoginModalOpen(true)}
+                className="btn btn-outline"
+                style={{
+                  fontSize: '0.85rem',
+                  padding: '0.5rem 1.1rem',
+                  borderColor: 'var(--primary-300)',
+                  color: 'var(--primary-800)',
+                  backgroundColor: 'rgba(254, 243, 199, 0.2)'
+                }}
+              >
+                <Lock size={14} /> Login
+              </button>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* 2. MAIN WORKSPACE */}
+      <main style={{ flex: 1, backgroundColor: 'var(--primary-50)' }}>
+        
+        {/* ---------------- A. VIEW: HOME (LANDING PAGE) ---------------- */}
+        {activeView === 'home' && (
+          <div>
+            {/* Hero Section */}
+            <section className="gradient-bg" style={{ padding: '6rem 0 5rem', borderBottom: '1px solid var(--primary-200)' }}>
+              <div className="container" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '3rem', alignItems: 'center' }}>
+                
+                {/* Hero Text */}
+                <div style={{ animation: 'fadeIn 0.5s ease-out' }}>
+                  <span className="badge badge-primary" style={{ marginBottom: '1rem', fontSize: '0.8rem', padding: '0.35rem 1rem' }}>
+                    Chương trình đào tạo tại ICD Sóng Thần
+                  </span>
+                  
+                  <h1 style={{ fontSize: '3rem', color: 'var(--neutral-900)', fontWeight: 800, lineHeight: 1.15, marginBottom: '1.5rem' }}>
+                    Vận hành kho chuyên nghiệp - <span className="text-gradient">Professional Warehouse Operation & Control</span>
+                  </h1>
+                  
+                  <p style={{ fontSize: '1.15rem', color: 'var(--neutral-600)', marginBottom: '2.5rem', maxWidth: '650px', lineHeight: 1.6 }}>
+                    Chào mừng bạn đến với hệ thống kiểm tra và đánh giá kết quả học tập dành cho học viên ONEX Logistics. Hãy thực hiện bài thu hoạch kiến thức và gửi đóng góp ý kiến để hoàn thiện khóa học tốt hơn.
+                  </p>
+
+                  <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                    <button onClick={() => setActiveView('quiz')} className="btn btn-primary" style={{ padding: '0.9rem 1.8rem', fontSize: '1rem' }}>
+                      Bắt đầu làm bài thu hoạch <Award size={18} />
+                    </button>
+                    <button onClick={() => setActiveView('evaluation')} className="btn btn-secondary" style={{ padding: '0.9rem 1.8rem', fontSize: '1rem' }}>
+                      Đánh giá khóa học
+                    </button>
+                  </div>
+                </div>
+
+                {/* Hero Illustration Side */}
+                <div style={{ display: 'flex', justifyContent: 'center', position: 'relative' }}>
+                  <div style={{
+                    width: '320px',
+                    height: '320px',
+                    borderRadius: '50%',
+                    backgroundColor: 'var(--primary-200)',
+                    position: 'absolute',
+                    zIndex: 0,
+                    filter: 'blur(30px)',
+                    opacity: 0.6,
+                    top: '10px'
+                  }} />
+                  
+                  <div className="glass-card pulse-hover" style={{
+                    padding: '2.5rem',
+                    position: 'relative',
+                    zIndex: 1,
+                    maxWidth: '350px',
+                    textAlign: 'center',
+                    border: '2px solid rgba(251, 191, 36, 0.4)',
+                    boxShadow: 'var(--shadow-xl)'
+                  }}>
+                    <div style={{ display: 'inline-flex', padding: '1.25rem', backgroundColor: 'var(--primary-300)', color: 'var(--neutral-800)', borderRadius: '50%', marginBottom: '1.5rem' }}>
+                      <Compass size={48} className="spin-slow" />
+                    </div>
+                    <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem', color: 'var(--neutral-800)' }}>Logistics Quốc Tế</h3>
+                    <p style={{ fontSize: '0.875rem', color: 'var(--neutral-500)', marginBottom: '1.5rem' }}>
+                      Quản lý chuỗi cung ứng, Vận tải đường biển, Hàng không, Thủ tục hải quan và Lưu kho bãi.
+                    </p>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
+                      <span className="badge badge-success">Vận tải</span>
+                      <span className="badge badge-success">Hải quan</span>
+                      <span className="badge badge-success">Kho bãi</span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </section>
+
+            {/* Three Action Cards Section */}
+            <section className="section-padding" style={{ backgroundColor: '#ffffff' }}>
+              <div className="container">
+                <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+                  <h2 style={{ fontSize: '2.25rem', color: 'var(--neutral-800)', marginBottom: '0.75rem' }}>Các Hoạt Động Cho Học Viên</h2>
+                  <p style={{ maxWidth: '600px', margin: '0 auto', color: 'var(--neutral-500)' }}>
+                    Chọn một trong ba hoạt động chính dưới đây để tiếp tục tiến trình hoàn thành chương trình đào tạo của bạn.
+                  </p>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
+                  
+                  {/* Card 1: Quiz */}
+                  <div className="glass-card" style={{ padding: '2.5rem', display: 'flex', flexDirection: 'column', height: '100%' }}>
+                    <div style={{ color: 'var(--primary-600)', marginBottom: '1.25rem' }}>
+                      <Award size={36} />
+                    </div>
+                    <h3 style={{ fontSize: '1.35rem', marginBottom: '0.75rem', color: 'var(--neutral-800)' }}>1. Bài Thu Hoạch</h3>
+                    <p style={{ color: 'var(--neutral-500)', fontSize: '0.95rem', marginBottom: '2rem', flex: 1 }}>
+                      Tham gia trả lời 5 câu hỏi trắc nghiệm đánh giá tổng hợp các kỹ năng cốt lõi về quy trình chuỗi cung ứng và vận tải hàng hóa. Nhận điểm số ngay lập tức.
+                    </p>
+                    <button onClick={() => setActiveView('quiz')} className="btn btn-primary" style={{ width: '100%' }}>
+                      Bắt đầu làm bài
+                    </button>
+                  </div>
+
+                  {/* Card 2: Evaluation */}
+                  <div className="glass-card" style={{ padding: '2.5rem', display: 'flex', flexDirection: 'column', height: '100%' }}>
+                    <div style={{ color: 'var(--primary-600)', marginBottom: '1.25rem' }}>
+                      <Star size={36} />
+                    </div>
+                    <h3 style={{ fontSize: '1.35rem', marginBottom: '0.75rem', color: 'var(--neutral-800)' }}>2. Đánh Giá Khóa Học</h3>
+                    <p style={{ color: 'var(--neutral-500)', fontSize: '0.95rem', marginBottom: '2rem', flex: 1 }}>
+                      Đánh giá mức độ hài lòng về giáo trình, giảng viên và điều kiện học tập. Đóng góp ý kiến tự luận để ONEX Logistics cải tiến dịch vụ giảng dạy.
+                    </p>
+                    <button onClick={() => setActiveView('evaluation')} className="btn btn-secondary" style={{ width: '100%' }}>
+                      Khảo sát đánh giá
+                    </button>
+                  </div>
+
+                  {/* Card 3: Feedback */}
+                  <div className="glass-card" style={{ padding: '2.5rem', display: 'flex', flexDirection: 'column', height: '100%' }}>
+                    <div style={{ color: 'var(--primary-600)', marginBottom: '1.25rem' }}>
+                      <MessageSquare size={36} />
+                    </div>
+                    <h3 style={{ fontSize: '1.35rem', marginBottom: '0.75rem', color: 'var(--neutral-800)' }}>3. Đóng Góp Ý Kiến</h3>
+                    <p style={{ color: 'var(--neutral-500)', fontSize: '0.95rem', marginBottom: '2rem', flex: 1 }}>
+                      Gửi thư góp ý, ý kiến phản hồi cá nhân, các thắc mắc về lớp học hoặc đề xuất mở rộng chuyên đề học tập với ban giám hiệu chương trình.
+                    </p>
+                    <button onClick={() => setActiveView('feedback')} className="btn btn-secondary" style={{ width: '100%' }}>
+                      Gửi góp ý
+                    </button>
+                  </div>
+
+                </div>
+              </div>
+            </section>
+
+            {/* Course Features / Statistics */}
+            <section className="section-padding gradient-bg" style={{ borderTop: '1px solid var(--primary-200)', borderBottom: '1px solid var(--primary-200)' }}>
+              <div className="container">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '2.5rem', textAlign: 'center' }}>
+                  <div>
+                    <div style={{ fontSize: '2.75rem', fontWeight: 800, color: 'var(--primary-600)', marginBottom: '0.25rem' }}>+500</div>
+                    <div style={{ fontWeight: 700, color: 'var(--neutral-800)', fontSize: '1rem', marginBottom: '0.5rem' }}>Học Viên Đào Tạo</div>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--neutral-500)' }}>Cán bộ, nhân viên tại các ICD, cảng biển và doanh nghiệp Xuất nhập khẩu.</p>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '2.75rem', fontWeight: 800, color: 'var(--primary-600)', marginBottom: '0.25rem' }}>100%</div>
+                    <div style={{ fontWeight: 700, color: 'var(--neutral-800)', fontSize: '1rem', marginBottom: '0.5rem' }}>Kiến Thức Thực Tế</div>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--neutral-500)' }}>Nội dung bài thi bám sát thực tiễn hoạt động logistics tại Việt Nam.</p>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '2.75rem', fontWeight: 800, color: 'var(--primary-600)', marginBottom: '0.25rem' }}>5★</div>
+                    <div style={{ fontWeight: 700, color: 'var(--neutral-800)', fontSize: '1rem', marginBottom: '0.5rem' }}>Chất Lượng Giảng Dạy</div>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--neutral-500)' }}>Được đánh giá cao bởi các nhà quản trị chuỗi cung ứng hàng đầu.</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        )}
+
+        {/* ---------------- B. CONTROLLING OTHER PANELS ---------------- */}
+        <div className="container section-padding">
+          {activeView === 'quiz' && <QuizSection />}
+          {activeView === 'evaluation' && <EvaluationSection />}
+          {activeView === 'feedback' && <FeedbackSection />}
+          {activeView === 'admin' && isAdminLoggedIn && (
+            <AdminDashboard 
+              onLogout={handleAdminLogout} 
+              systemLogo={systemLogo}
+              onLogoUpdate={(newLogo) => setSystemLogo(newLogo)}
+            />
+          )}
+        </div>
+
+      </main>
+
+      {/* 3. FOOTER */}
+      <footer style={{
+        backgroundColor: 'var(--neutral-900)',
+        color: 'var(--neutral-300)',
+        padding: '3.5rem 0 2rem',
+        borderTop: '5px solid var(--primary-500)'
+      }}>
+        <div className="container">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2.5rem', marginBottom: '3rem' }}>
+            
+            {/* Footer Column 1 */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
+                {systemLogo ? (
+                  <img src={systemLogo} alt="ONEX Logo" style={{ height: '36px', maxWidth: '160px', objectFit: 'contain' }} />
+                ) : (
+                  <>
+                    <div style={{ backgroundColor: 'var(--primary-500)', color: 'var(--neutral-900)', padding: '0.4rem', borderRadius: 'var(--radius-sm)' }}>
+                      <Compass size={18} />
+                    </div>
+                    <strong style={{ fontSize: '1.2rem', color: '#ffffff', letterSpacing: '-0.02em' }}>ONEX Logistics</strong>
+                  </>
+                )}
+              </div>
+              <p style={{ fontSize: '0.85rem', color: 'var(--neutral-400)', lineHeight: 1.6 }}>
+                Đơn vị hàng đầu về đào tạo thực chiến ngành Logistics, quản lý chuỗi cung ứng và thủ tục hải quan tại Việt Nam.
+              </p>
+            </div>
+
+            {/* Footer Column 2 */}
+            <div>
+              <strong style={{ display: 'block', color: '#ffffff', marginBottom: '1.25rem', fontSize: '0.95rem' }}>Thông tin khóa học</strong>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.65rem', fontSize: '0.85rem', color: 'var(--neutral-400)' }}>
+                <li>• Quản trị Logistics & Chuỗi cung ứng</li>
+                <li>• Khai báo hải quan điện tử Vnaccs</li>
+                <li>• Nghiệp vụ Kho bãi & Giao nhận ICD</li>
+                <li>• Thanh toán quốc tế thực hành</li>
+              </ul>
+            </div>
+
+            {/* Footer Column 3 */}
+            <div>
+              <strong style={{ display: 'block', color: '#ffffff', marginBottom: '1.25rem', fontSize: '0.95rem' }}>Liên hệ hỗ trợ</strong>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.85rem', color: 'var(--neutral-400)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <MapPin size={14} style={{ color: 'var(--primary-400)' }} />
+                  <span>Khu công nghệ cao Thủ Đức, TP. Hồ Chí Minh</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Phone size={14} style={{ color: 'var(--primary-400)' }} />
+                  <span>+84 (0) 28 1234 5678</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Mail size={14} style={{ color: 'var(--primary-400)' }} />
+                  <span>info@onexlogistics.edu.vn</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Bottom Footer Credits */}
+          <div style={{
+            borderTop: '1px solid var(--neutral-800)',
+            paddingTop: '1.5rem',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '1rem',
+            fontSize: '0.8rem',
+            color: 'var(--neutral-500)'
+          }}>
+            <span>© 2026 ONEX Logistics Academy. All rights reserved.</span>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <span style={{ cursor: 'pointer' }}>Điều khoản sử dụng</span>
+              <span style={{ cursor: 'pointer' }}>Chính sách bảo mật</span>
+            </div>
+          </div>
+        </div>
+      </footer>
+
+      {/* 4. MODALS */}
+      <LoginModal 
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onLoginSuccess={handleLoginSuccess}
+      />
+
+      <style dangerouslySetInnerHTML={{__html: `
+        .spin-slow {
+          animation: rotate-compass 12s infinite linear;
+        }
+        @keyframes rotate-compass {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}} />
+
+    </div>
+  );
+}
+
+export default App;
