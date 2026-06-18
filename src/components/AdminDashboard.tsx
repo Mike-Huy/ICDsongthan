@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../supabaseClient';
 import { 
-  Users, BookOpen, Star, Settings, LogOut, 
+  Users, BookOpen, Star, Settings, 
   Plus, Edit, Trash2, Save, Download, Upload, Search, 
   RefreshCw, X, ShieldAlert
 } from 'lucide-react';
@@ -63,12 +64,11 @@ interface Feedback {
 }
 
 interface AdminDashboardProps {
-  onLogout: () => void;
   systemLogo: string | null;
   onLogoUpdate: (logo: string | null) => void;
 }
 
-export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: AdminDashboardProps) {
+export default function AdminDashboard({ systemLogo, onLogoUpdate }: AdminDashboardProps) {
   // Tabs: 'submissions' | 'quiz_editor' | 'eval_editor' | 'settings' | 'user_management'
   const [activeTab, setActiveTab] = useState<'submissions' | 'quiz_editor' | 'eval_editor' | 'settings' | 'user_management'>('submissions');
   
@@ -123,6 +123,10 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
   // Logo upload state variables
   const [logoUrlInput, setLogoUrlInput] = useState('');
   const [logoMsg, setLogoMsg] = useState({ type: '', text: '' });
+
+  // Active quiz setting
+  const [activeQuizId, setActiveQuizId] = useState<string | number | null>(null);
+  const [activeQuizMsg, setActiveQuizMsg] = useState({ type: '', text: '' });
 
   // Sync logo prop to local input
   useEffect(() => {
@@ -207,6 +211,27 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
     } catch (err: any) {
       console.error("Error deleting logo:", err);
       setLogoMsg({ type: 'error', text: `Lỗi khi xóa logo: ${err.message}` });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ---------------- ACTIVE QUIZ SETTING ----------------
+  const handleSaveActiveQuiz = async () => {
+    setActiveQuizMsg({ type: '', text: '' });
+    if (!activeQuizId) {
+      setActiveQuizMsg({ type: 'error', text: 'Vui lòng chọn một đề bài.' });
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('onex_settings')
+        .upsert({ key: 'active_quiz_id', value: String(activeQuizId) });
+      if (error) throw error;
+      setActiveQuizMsg({ type: 'success', text: 'Đã kích hoạt đề bài thành công! Người dùng sẽ làm đề này khi bấm vào bài thu hoạch hoặc quét QR.' });
+    } catch (err: any) {
+      setActiveQuizMsg({ type: 'error', text: `Lỗi khi lưu cài đặt: ${err.message}` });
     } finally {
       setLoading(false);
     }
@@ -353,17 +378,26 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
 
         setLoading(true);
 
+        let totalQuestionsImported = 0;
+        const importErrors: string[] = [];
+
         // Process each quiz
         for (const qName of quizNames) {
           const quizData = quizzesMap[qName];
           let quizId: number | string | null = null;
-          
+
+          // Check if quiz with same title already exists
           const { data: existingQuizzes, error: qFindErr } = await supabase
             .from('onex_quizzes')
             .select('*')
             .eq('title', qName);
-          
-          if (!qFindErr && existingQuizzes && existingQuizzes.length > 0) {
+
+          if (qFindErr) {
+            importErrors.push(`Lỗi kết nối khi kiểm tra đề "${qName}": ${qFindErr.message}`);
+            continue;
+          }
+
+          if (existingQuizzes && existingQuizzes.length > 0) {
             quizId = existingQuizzes[0].id;
           } else {
             // Create a new quiz
@@ -375,25 +409,15 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
                 duration_minutes: quizData.duration
               })
               .select('*');
-            
-            if (!qCreateErr && newQuizData && newQuizData.length > 0) {
-              quizId = newQuizData[0].id;
-            } else {
-              // Fallback offline quiz creation
-              console.warn("DB quiz insert error, creating local temporary quiz:", qCreateErr);
-              quizId = Date.now();
-              const localQuiz = {
-                id: quizId,
-                title: qName,
-                description: quizData.description,
-                duration_minutes: quizData.duration
-              };
-              setQuizzes(prev => [...prev, localQuiz]);
+
+            if (qCreateErr || !newQuizData || newQuizData.length === 0) {
+              importErrors.push(`Không thể tạo đề "${qName}" trong database: ${qCreateErr?.message || 'Không nhận được dữ liệu phản hồi'}`);
+              continue;
             }
+            quizId = newQuizData[0].id;
           }
 
           if (quizId) {
-            // Prepare questions with quiz_id
             const finalQuestions = quizData.questions.map(q => ({
               ...q,
               quiz_id: quizId
@@ -404,18 +428,18 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
               .insert(finalQuestions);
 
             if (insErr) {
-              console.warn("Error inserting questions for quiz:", qName, insErr);
-              // Fallback local insert
-              const localQuestions = finalQuestions.map((q, idx) => ({
-                ...q,
-                id: Date.now() + idx
-              }));
-              setQuestions(prev => [...prev, ...localQuestions]);
+              importErrors.push(`Lỗi khi lưu câu hỏi của đề "${qName}": ${insErr.message}`);
+            } else {
+              totalQuestionsImported += finalQuestions.length;
             }
           }
         }
 
-        alert('Đã nhập thành công toàn bộ đề thi và câu hỏi từ file Excel!');
+        if (importErrors.length > 0) {
+          alert(`Có lỗi xảy ra khi nhập đề thi:\n\n${importErrors.join('\n')}\n\nVui lòng kiểm tra kết nối Supabase và thử lại.`);
+        } else {
+          alert(`Đã nhập thành công ${quizNames.length} đề thi với ${totalQuestionsImported} câu hỏi vào hệ thống!`);
+        }
         await fetchInitialData();
 
       } catch (err: any) {
@@ -493,7 +517,9 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
         const updateData: any = {
           username: adminUserForm.username.trim(),
           role: adminUserForm.role,
-          permissions: adminUserForm.permissions
+          permissions: adminUserForm.role === 'super_admin'
+            ? ['quiz_editor', 'eval_editor', 'settings', 'submissions', 'user_management']
+            : adminUserForm.permissions
         };
         if (adminUserForm.password) {
           updateData.password = adminUserForm.password;
@@ -514,7 +540,9 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
             username: adminUserForm.username.trim(),
             password: adminUserForm.password,
             role: adminUserForm.role,
-            permissions: adminUserForm.permissions
+            permissions: adminUserForm.role === 'super_admin'
+              ? ['quiz_editor', 'eval_editor', 'settings', 'submissions', 'user_management']
+              : adminUserForm.permissions
           });
 
         if (error) throw error;
@@ -573,9 +601,10 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
       
       setQuizzes(quizData || []);
       if (quizData && quizData.length > 0) {
-        setSelectedQuiz(quizData[0]);
+        const defaultQuiz = quizData.find(q => q.title.includes('ICD Sóng Thần')) || quizData[0];
+        setSelectedQuiz(defaultQuiz);
         // Fetch questions
-        const { data: questionData } = await supabase.from('onex_questions').select('*').eq('quiz_id', quizData[0].id).order('id', { ascending: true });
+        const { data: questionData } = await supabase.from('onex_questions').select('*').eq('quiz_id', defaultQuiz.id).order('id', { ascending: true });
         setQuestions(questionData || []);
       }
 
@@ -595,7 +624,15 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
       const { data: feedsData } = await supabase.from('onex_feedback').select('*').order('created_at', { ascending: false });
       setFeedbacks(feedsData || []);
 
-      // 6. Fetch Admin Users
+      // 6. Fetch Active Quiz Setting
+      const { data: activeQuizSetting } = await supabase
+        .from('onex_settings')
+        .select('value')
+        .eq('key', 'active_quiz_id')
+        .maybeSingle();
+      if (activeQuizSetting?.value) setActiveQuizId(activeQuizSetting.value);
+
+      // 7. Fetch Admin Users
       await fetchAdminUsers();
 
     } catch (err: any) {
@@ -847,45 +884,39 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
     }
   };
 
-  // ---------------- CSV EXPORTER ----------------
-  const handleExportCSV = () => {
+  // ---------------- XLS EXPORTER ----------------
+  const handleExportXLS = () => {
     if (submissions.length === 0) {
       alert('Không có dữ liệu kết quả học viên để xuất.');
       return;
     }
 
-    let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // UTF-8 BOM
-    csvContent += "Mã Số Học Viên,Họ Và Tên,Email,Số Điện Thoại,Điểm Số,Số Câu Đúng,Thời Gian Hoàn Thành\n";
+    const data = submissions.map((sub, idx) => ({
+      'STT': idx + 1,
+      'Mã Nhân Viên': sub.student_code,
+      'Họ Và Tên': sub.fullname,
+      'Điểm Số': sub.score,
+      'Số Câu Đúng': sub.correct_answers,
+      'Tổng Số Câu': sub.total_questions,
+      'Kết Quả': sub.score >= 5 ? 'Đạt' : 'Chưa đạt',
+      'Thời Gian Nộp Bài': new Date(sub.completed_at).toLocaleString('vi-VN'),
+    }));
 
-    submissions.forEach((sub) => {
-      const formattedDate = new Date(sub.completed_at).toLocaleString('vi-VN');
-      const row = [
-        `"${sub.student_code}"`,
-        `"${sub.fullname}"`,
-        `"${sub.email}"`,
-        `"${sub.phone}"`,
-        sub.score,
-        `"${sub.correct_answers}/${sub.total_questions}"`,
-        `"${formattedDate}"`
-      ].join(",");
-      csvContent += row + "\n";
-    });
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    worksheet['!cols'] = [
+      { wch: 6 }, { wch: 16 }, { wch: 28 },
+      { wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 22 },
+    ];
 
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `ONEX_Logistics_KetQuaThi_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Kết Quả Học Viên');
+    XLSX.writeFile(workbook, `ONEX_KetQuaThi_${new Date().toISOString().split('T')[0]}.xls`, { bookType: 'xls' });
   };
 
   // Filter Submissions by Search
-  const filteredSubmissions = submissions.filter(s => 
-    s.fullname.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    s.student_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    s.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    s.phone.includes(searchQuery)
+  const filteredSubmissions = submissions.filter(s =>
+    s.fullname.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    s.student_code.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const filteredEvalSubmissions = evalSubmissions.filter(s => 
@@ -977,15 +1008,6 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
             </div>
           )}
         </nav>
-
-        {/* Exit Button */}
-        <button
-          onClick={onLogout}
-          className="btn btn-outline"
-          style={{ width: '100%', borderColor: 'var(--primary-300)', color: 'var(--primary-800)', fontSize: '0.875rem', padding: '0.65rem 1rem' }}
-        >
-          <LogOut size={16} /> Thoát quản trị
-        </button>
       </aside>
 
       {/* 2. MAIN CONTENT AREA */}
@@ -1032,8 +1054,8 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
                   <RefreshCw size={18} />
                 </button>
                 {resultsSubTab === 'quiz_results' && (
-                  <button onClick={handleExportCSV} className="btn btn-secondary" style={{ fontSize: '0.85rem' }}>
-                    <Download size={14} /> Xuất Excel (CSV)
+                  <button onClick={handleExportXLS} className="btn btn-secondary" style={{ fontSize: '0.85rem' }}>
+                    <Download size={14} /> Xuất Excel (.xls)
                   </button>
                 )}
               </div>
@@ -1235,8 +1257,8 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
             {/* Header and Quiz selector */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
               <div>
-                <h3 style={{ fontSize: '1.35rem', marginBottom: '0.25rem' }}>Cấu hình Đề thi & Câu hỏi</h3>
-                <p style={{ fontSize: '0.85rem', color: 'var(--neutral-500)' }}>Thêm, sửa đổi hoặc xóa các câu hỏi trong đề trắc nghiệm Logistics.</p>
+                <h3 style={{ fontSize: '1.2rem', marginBottom: '0.25rem' }}>Cấu hình Đề thi & Câu hỏi</h3>
+                <p style={{ fontSize: '0.78rem', color: 'var(--neutral-500)' }}>Thêm, sửa đổi hoặc xóa các câu hỏi trong đề trắc nghiệm Logistics.</p>
               </div>
 
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -1330,7 +1352,7 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
             {selectedQuiz ? (
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <h4 style={{ fontSize: '1.05rem', color: 'var(--neutral-800)' }}>
+                  <h4 style={{ fontSize: '0.95rem', color: 'var(--neutral-800)' }}>
                     Danh sách câu hỏi ({questions.length} câu)
                   </h4>
                   <button onClick={() => handleOpenQuestionModal()} className="btn btn-primary" style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}>
@@ -1350,7 +1372,7 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
                       questions.map((q, idx) => (
                         <div key={q.id} className="glass" style={{ padding: '1.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--primary-200)' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '0.75rem' }}>
-                            <div style={{ fontWeight: 'bold', fontSize: '0.95rem', color: 'var(--neutral-800)' }}>
+                            <div style={{ fontWeight: 'bold', fontSize: '0.8rem', color: 'var(--neutral-800)' }}>
                               Câu {idx + 1}: {q.question_text}
                             </div>
                             
@@ -1369,7 +1391,7 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
                               const isCorrect = oIdx === q.correct_option_index;
                               return (
                                 <div key={oIdx} style={{
-                                  fontSize: '0.85rem',
+                                  fontSize: '0.75rem',
                                   padding: '0.5rem',
                                   borderRadius: 'var(--radius-sm)',
                                   backgroundColor: isCorrect ? '#ecfdf5' : '#ffffff',
@@ -1385,11 +1407,6 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
                                 </div>
                               );
                             })}
-                          </div>
-
-                          <div style={{ fontSize: '0.8rem', color: 'var(--neutral-400)', display: 'flex', gap: '1rem' }}>
-                            <span>Điểm cộng: <strong>{q.score}đ</strong></span>
-                            <span>Mã câu hỏi: <code>{q.id}</code></span>
                           </div>
                         </div>
                       ))
@@ -1466,8 +1483,8 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
             
             {/* Card 1: Logo Configuration */}
             <div className="glass-card" style={{ padding: '2rem' }}>
-              <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>Logo Hệ Thống</h3>
-              <p style={{ fontSize: '0.85rem', color: 'var(--neutral-500)', marginBottom: '1.5rem' }}>Cập nhật Logo hiển thị trên Header và Footer của Website.</p>
+              <h3 style={{ fontSize: '1.05rem', marginBottom: '0.5rem' }}>Logo Hệ Thống</h3>
+              <p style={{ fontSize: '0.75rem', color: 'var(--neutral-500)', marginBottom: '1.5rem' }}>Cập nhật Logo hiển thị trên Header và Footer của Website.</p>
               
               <div style={{ borderTop: '1px solid var(--primary-200)', paddingTop: '1.5rem' }}>
                 <label className="form-label">Xem trước Logo hiện tại</label>
@@ -1487,7 +1504,7 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
                   {systemLogo ? (
                     <img src={systemLogo} alt="ONEX Logo Preview" style={{ maxHeight: '60px', maxWidth: '100%', objectFit: 'contain' }} />
                   ) : (
-                    <span style={{ fontSize: '0.85rem', color: 'var(--neutral-400)' }}>Đang sử dụng logo mặc định (ONEX)</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--neutral-400)' }}>Đang sử dụng logo mặc định (ONEX)</span>
                   )}
                 </div>
 
@@ -1498,7 +1515,7 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
                     padding: '0.75rem 1rem',
                     borderRadius: 'var(--radius-md)',
                     marginBottom: '1rem',
-                    fontSize: '0.85rem'
+                    fontSize: '0.75rem'
                   }}>
                     {logoMsg.text}
                   </div>
@@ -1513,7 +1530,7 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
                     className="form-input"
                     style={{ padding: '0.5rem' }}
                   />
-                  <span style={{ fontSize: '0.75rem', color: 'var(--neutral-400)', marginTop: '0.35rem', display: 'block' }}>
+                  <span style={{ fontSize: '0.65rem', color: 'var(--neutral-400)', marginTop: '0.35rem', display: 'block' }}>
                     Kích thước tối đa 2MB. Khuyên dùng ảnh nền trong suốt (transparent).
                   </span>
                 </div>
@@ -1534,7 +1551,7 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
                     type="button" 
                     onClick={handleSaveLogo} 
                     className="btn btn-primary" 
-                    style={{ fontSize: '0.85rem', flex: 1 }} 
+                    style={{ fontSize: '0.75rem', flex: 1 }} 
                     disabled={loading}
                   >
                     <Save size={16} /> Lưu Logo
@@ -1544,7 +1561,7 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
                       type="button" 
                       onClick={handleDeleteLogo} 
                       className="btn btn-outline" 
-                      style={{ fontSize: '0.85rem', borderColor: 'var(--error)', color: 'var(--error)' }}
+                      style={{ fontSize: '0.75rem', borderColor: 'var(--error)', color: 'var(--error)' }}
                       disabled={loading}
                     >
                       Xóa Logo
@@ -1554,13 +1571,92 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
               </div>
             </div>
 
-            {/* Card 2: Password Configuration */}
+            {/* Card 2: Active Quiz Configuration */}
             <div className="glass-card" style={{ padding: '2rem' }}>
-              <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>Mật Khẩu Quản Trị</h3>
-              <p style={{ fontSize: '0.85rem', color: 'var(--neutral-500)', marginBottom: '1.5rem' }}>Cập nhật mật khẩu bảo mật truy cập của tài khoản quản lý.</p>
+              <h3 style={{ fontSize: '1.05rem', marginBottom: '0.5rem' }}>Đề Bài Đang Kích Hoạt</h3>
+              <p style={{ fontSize: '0.75rem', color: 'var(--neutral-500)', marginBottom: '1.5rem' }}>
+                Chọn đề bài sẽ hiển thị khi người dùng bấm "Bài thu hoạch" hoặc quét mã QR trên website.
+              </p>
+
+              <div style={{ borderTop: '1px solid var(--primary-200)', paddingTop: '1.5rem' }}>
+                {activeQuizMsg.text && (
+                  <div style={{
+                    backgroundColor: activeQuizMsg.type === 'success' ? 'var(--success-bg)' : 'var(--error-bg)',
+                    color: activeQuizMsg.type === 'success' ? 'var(--success)' : 'var(--error)',
+                    padding: '0.75rem 1rem',
+                    borderRadius: 'var(--radius-md)',
+                    marginBottom: '1rem',
+                    fontSize: '0.75rem'
+                  }}>
+                    {activeQuizMsg.text}
+                  </div>
+                )}
+
+                {quizzes.length === 0 ? (
+                  <p style={{ fontSize: '0.75rem', color: 'var(--neutral-400)', fontStyle: 'italic' }}>
+                    Chưa có đề bài nào trong hệ thống. Hãy tạo đề bài trong tab "Đề Thi & Câu Hỏi" trước.
+                  </p>
+                ) : (
+                  <>
+                    <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                      <label className="form-label">Chọn đề bài kích hoạt *</label>
+                      <select
+                        className="form-input"
+                        value={activeQuizId !== null ? String(activeQuizId) : ''}
+                        onChange={(e) => setActiveQuizId(e.target.value)}
+                      >
+                        <option value="">-- Chọn đề bài --</option>
+                        {quizzes.map((q) => (
+                          <option key={String(q.id)} value={String(q.id)}>
+                            {q.title} ({q.duration_minutes} phút)
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {activeQuizId && (
+                      <div style={{
+                        backgroundColor: 'var(--primary-50)',
+                        border: '1px solid var(--primary-200)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '0.75rem 1rem',
+                        marginBottom: '1.25rem',
+                        fontSize: '0.75rem',
+                        color: 'var(--neutral-700)'
+                      }}>
+                        {(() => {
+                          const q = quizzes.find(q => String(q.id) === String(activeQuizId));
+                          return q ? (
+                            <>
+                              <strong>Đề đang chọn:</strong> {q.title}<br/>
+                              <span style={{ color: 'var(--neutral-500)', fontSize: '0.7rem' }}>{q.description}</span>
+                            </>
+                          ) : null;
+                        })()}
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={handleSaveActiveQuiz}
+                      className="btn btn-primary"
+                      style={{ fontSize: '0.75rem', width: '100%' }}
+                      disabled={loading || !activeQuizId}
+                    >
+                      <Save size={16} /> Kích hoạt đề bài này
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Card 3: Password Configuration */}
+            <div className="glass-card" style={{ padding: '2rem' }}>
+              <h3 style={{ fontSize: '1.05rem', marginBottom: '0.5rem' }}>Mật Khẩu Quản Trị</h3>
+              <p style={{ fontSize: '0.75rem', color: 'var(--neutral-500)', marginBottom: '1.5rem' }}>Cập nhật mật khẩu bảo mật truy cập của tài khoản quản lý.</p>
               
               <form onSubmit={handleUpdatePassword} style={{ borderTop: '1px solid var(--primary-200)', paddingTop: '1.5rem' }}>
-                <h4 style={{ fontSize: '0.95rem', color: 'var(--neutral-800)', marginBottom: '1rem', fontWeight: 'bold' }}>Thay đổi mật khẩu đăng nhập</h4>
+                <h4 style={{ fontSize: '0.8rem', color: 'var(--neutral-800)', marginBottom: '1rem', fontWeight: 'bold' }}>Thay đổi mật khẩu đăng nhập</h4>
                 
                 {pwdMsg.text && (
                   <div style={{
@@ -1569,7 +1665,7 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
                     padding: '0.75rem 1rem',
                     borderRadius: 'var(--radius-md)',
                     marginBottom: '1rem',
-                    fontSize: '0.85rem'
+                    fontSize: '0.75rem'
                   }}>
                     {pwdMsg.text}
                   </div>
@@ -1599,7 +1695,7 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
                   />
                 </div>
 
-                <button type="submit" className="btn btn-primary" style={{ marginTop: '0.5rem', width: '100%', fontSize: '0.85rem' }} disabled={loading}>
+                <button type="submit" className="btn btn-primary" style={{ marginTop: '0.5rem', width: '100%', fontSize: '0.75rem' }} disabled={loading}>
                   <Save size={16} /> Lưu mật khẩu mới
                 </button>
               </form>
@@ -1651,29 +1747,33 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
                             {user.role === 'super_admin' ? 'Super Admin' : user.role === 'admin' ? 'Admin' : 'Editor'}
                           </span>
                         </td>
-                        <td style={{ padding: '0.75rem', maxWidth: '300px', whiteSpace: 'normal', wordBreak: 'break-word' }}>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
-                            {Array.isArray(user.permissions) && user.permissions.map((perm: string) => {
-                              let label = perm;
-                              if (perm === 'quiz_editor') label = 'Quản lý đề thi';
-                              else if (perm === 'eval_editor') label = 'Quản lý khảo sát';
-                              else if (perm === 'settings') label = 'Cấu hình hệ thống';
-                              else if (perm === 'submissions') label = 'Xem kết quả học viên';
-                              else if (perm === 'user_management') label = 'Quản lý user';
-                              return (
-                                <span key={perm} style={{
-                                  backgroundColor: 'var(--neutral-100)',
-                                  color: 'var(--neutral-700)',
-                                  fontSize: '0.75rem',
-                                  padding: '0.1rem 0.35rem',
-                                  borderRadius: 'var(--radius-sm)',
-                                  border: '1px solid var(--neutral-200)'
-                                }}>
-                                  {label}
-                                </span>
-                              );
-                            })}
-                          </div>
+                         <td style={{ padding: '0.75rem', maxWidth: '300px', whiteSpace: 'normal', wordBreak: 'break-word' }}>
+                          {user.role === 'super_admin' ? (
+                            <span style={{ fontStyle: 'italic', color: 'var(--neutral-500)', fontSize: '0.85rem' }}>Toàn quyền</span>
+                          ) : (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
+                              {Array.isArray(user.permissions) && user.permissions.map((perm: string) => {
+                                let label = perm;
+                                if (perm === 'quiz_editor') label = 'Quản lý đề thi';
+                                else if (perm === 'eval_editor') label = 'Quản lý khảo sát';
+                                else if (perm === 'settings') label = 'Cấu hình hệ thống';
+                                else if (perm === 'submissions') label = 'Xem kết quả học viên';
+                                else if (perm === 'user_management') label = 'Quản lý user';
+                                return (
+                                  <span key={perm} style={{
+                                    backgroundColor: 'var(--neutral-100)',
+                                    color: 'var(--neutral-700)',
+                                    fontSize: '0.75rem',
+                                    padding: '0.1rem 0.35rem',
+                                    borderRadius: 'var(--radius-sm)',
+                                    border: '1px solid var(--neutral-200)'
+                                  }}>
+                                    {label}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
                         </td>
                         <td style={{ padding: '0.75rem', fontSize: '0.8rem', color: 'var(--neutral-500)' }}>
                           {new Date(user.created_at).toLocaleDateString('vi-VN')}
@@ -1702,7 +1802,7 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
       </main>
 
       {/* ---------------- QUESTION CREATION / EDITING MODAL ---------------- */}
-      {isQuestionModalOpen && editingQuestion && (
+      {isQuestionModalOpen && editingQuestion && createPortal(
         <div style={{
           position: 'fixed',
           top: 0,
@@ -1793,11 +1893,12 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ---------------- QUIZ EDITING MODAL ---------------- */}
-      {isQuizModalOpen && editingQuiz && (
+      {isQuizModalOpen && editingQuiz && createPortal(
         <div style={{
           position: 'fixed',
           top: 0,
@@ -1859,11 +1960,12 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ---------------- EVALUATION CREATION / EDITING MODAL ---------------- */}
-      {isEvalModalOpen && editingEval && (
+      {isEvalModalOpen && editingEval && createPortal(
         <div style={{
           position: 'fixed',
           top: 0,
@@ -1914,11 +2016,12 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ---------------- USER CREATION / EDITING MODAL ---------------- */}
-      {isUserModalOpen && (
+      {isUserModalOpen && createPortal(
         <div style={{
           position: 'fixed',
           top: 0,
@@ -1992,38 +2095,40 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
                 </select>
               </div>
 
-              <div className="form-group">
-                <label className="form-label" style={{ marginBottom: '0.5rem', display: 'block' }}>Phân quyền chức năng:</label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingLeft: '0.25rem' }}>
-                  {[
-                    { key: 'quiz_editor', label: 'Quản lý đề thi & câu hỏi' },
-                    { key: 'eval_editor', label: 'Quản lý khảo sát' },
-                    { key: 'settings', label: 'Cấu hình hệ thống (Logo, Mật khẩu)' },
-                    { key: 'submissions', label: 'Xem kết quả bài nộp của học viên' },
-                    { key: 'user_management', label: 'Quản lý tài khoản User & phân quyền' }
-                  ].map((perm) => {
-                    const isChecked = adminUserForm.permissions.includes(perm.key);
-                    return (
-                      <label key={perm.key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}>
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={(e) => {
-                            let newPerms = [...adminUserForm.permissions];
-                            if (e.target.checked) {
-                              if (!newPerms.includes(perm.key)) newPerms.push(perm.key);
-                            } else {
-                              newPerms = newPerms.filter(p => p !== perm.key);
-                            }
-                            setAdminUserForm({ ...adminUserForm, permissions: newPerms });
-                          }}
-                        />
-                        <span>{perm.label}</span>
-                      </label>
-                    );
-                  })}
+              {adminUserForm.role !== 'super_admin' && (
+                <div className="form-group">
+                  <label className="form-label" style={{ marginBottom: '0.5rem', display: 'block' }}>Phân quyền chức năng:</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingLeft: '0.25rem' }}>
+                    {[
+                      { key: 'quiz_editor', label: 'Quản lý đề thi & câu hỏi' },
+                      { key: 'eval_editor', label: 'Quản lý khảo sát' },
+                      { key: 'settings', label: 'Cấu hình hệ thống (Logo, Mật khẩu)' },
+                      { key: 'submissions', label: 'Xem kết quả bài nộp của học viên' },
+                      { key: 'user_management', label: 'Quản lý tài khoản User & phân quyền' }
+                    ].map((perm) => {
+                      const isChecked = adminUserForm.permissions.includes(perm.key);
+                      return (
+                        <label key={perm.key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              let newPerms = [...adminUserForm.permissions];
+                              if (e.target.checked) {
+                                if (!newPerms.includes(perm.key)) newPerms.push(perm.key);
+                              } else {
+                                newPerms = newPerms.filter(p => p !== perm.key);
+                              }
+                              setAdminUserForm({ ...adminUserForm, permissions: newPerms });
+                            }}
+                          />
+                          <span>{perm.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem', borderTop: '1px solid var(--primary-200)', paddingTop: '1rem' }}>
                 <button type="button" onClick={() => setIsUserModalOpen(false)} className="btn btn-outline" style={{ fontSize: '0.85rem' }}>Hủy</button>
@@ -2031,7 +2136,8 @@ export default function AdminDashboard({ onLogout, systemLogo, onLogoUpdate }: A
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

@@ -180,14 +180,13 @@ a, button {
   border-color: rgba(217, 119, 6, 0.6);
 }
 
-/* Form styles */
 .form-group {
   margin-bottom: 1.25rem;
 }
 
 .form-label {
   display: block;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--neutral-700);
   margin-bottom: 0.5rem;
@@ -195,13 +194,13 @@ a, button {
 
 .form-input {
   width: 100%;
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 0.75rem;
   border-radius: var(--radius-md);
   border: 1px solid var(--primary-200);
   background-color: #ffffff;
   color: var(--neutral-800);
   font-family: inherit;
-  font-size: 0.95rem;
+  font-size: 0.8rem;
   transition: var(--transition-smooth);
 }
 

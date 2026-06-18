@@ -97,8 +97,6 @@ export default function QuizSection() {
 
   const [fullname, setFullname] = useState('');
   const [studentCode, setStudentCode] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
 
   const [step, setStep] = useState<Step>('register');
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -123,12 +121,23 @@ export default function QuizSection() {
   const loadQuiz = async () => {
     setIsLoading(true);
     try {
-      const { data: quizData, error: quizError } = await supabase
-        .from('onex_quizzes')
-        .select('*')
-        .order('id', { ascending: true })
-        .limit(1);
+      // Check for admin-selected active quiz first
+      const { data: activeSetting } = await supabase
+        .from('onex_settings')
+        .select('value')
+        .eq('key', 'active_quiz_id')
+        .maybeSingle();
+
+      let quizQuery = supabase.from('onex_quizzes').select('*');
+      if (activeSetting?.value) {
+        quizQuery = quizQuery.eq('id', activeSetting.value);
+      } else {
+        quizQuery = quizQuery.order('id', { ascending: true }).limit(1);
+      }
+
+      const { data: quizData, error: quizError } = await quizQuery;
       if (quizError) throw quizError;
+
       if (quizData && quizData.length > 0) {
         const activeQuiz = quizData[0];
         setQuiz(activeQuiz);
@@ -175,7 +184,7 @@ export default function QuizSection() {
 
   const handleRegister = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!fullname || !studentCode || !email || !phone) return;
+    if (!fullname || !studentCode) return;
     setStep('testing');
     setCurrentIdx(0);
     setAnswers({});
@@ -209,7 +218,7 @@ export default function QuizSection() {
       const finalAnswers: Record<string, number> = {};
       questions.forEach((q, idx) => { finalAnswers[String(q.id)] = answers[idx] !== undefined ? answers[idx] : -1; });
       const { error } = await supabase.from('onex_submissions').insert({
-        fullname, student_code: studentCode, email, phone,
+        fullname, student_code: studentCode, email: '', phone: '',
         quiz_id: quiz.id, score: results.score,
         total_questions: results.totalQuestions, correct_answers: results.correctAnswers,
         answers_json: finalAnswers,
@@ -277,7 +286,7 @@ export default function QuizSection() {
       });
       // NOTE: requires `attempt_number INTEGER DEFAULT 1` column in onex_submissions table
       const { error } = await supabase.from('onex_submissions').insert({
-        fullname, student_code: studentCode, email, phone,
+        fullname, student_code: studentCode, email: '', phone: '',
         quiz_id: quiz.id, score: results.score,
         total_questions: results.totalQuestions, correct_answers: results.correctAnswers,
         answers_json: finalAnswers,
@@ -356,14 +365,6 @@ export default function QuizSection() {
             <div className="form-group">
               <label className="form-label">Mã số học viên *</label>
               <input type="text" required className="form-input" placeholder="ONEX-2026-XXXX" value={studentCode} onChange={(e) => setStudentCode(e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Địa chỉ Email *</label>
-              <input type="email" required className="form-input" placeholder="email@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Số điện thoại *</label>
-              <input type="tel" required className="form-input" placeholder="0901234567" value={phone} onChange={(e) => setPhone(e.target.value)} />
             </div>
             <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1.5rem', fontSize: '1.05rem', padding: '0.85rem' }}>
               Bắt đầu làm bài thu hoạch <ArrowRight size={18} />

@@ -17,8 +17,18 @@ function App() {
   const [activeView, setActiveView] = useState<ActiveView>('home');
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [adminUsername, setAdminUsername] = useState('');
   const [systemLogo, setSystemLogo] = useState<string | null>(null);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+
+  // Navigate directly to the correct view when arriving via QR link (?view=quiz)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const view = params.get('view') as ActiveView | null;
+    if (view && ['quiz', 'evaluation', 'feedback'].includes(view)) {
+      setActiveView(view);
+    }
+  }, []);
 
   // Load system logo settings on component mount
   useEffect(() => {
@@ -40,13 +50,15 @@ function App() {
     loadSystemLogo();
   }, []);
 
-  const handleLoginSuccess = () => {
+  const handleLoginSuccess = (username: string) => {
     setIsAdminLoggedIn(true);
+    setAdminUsername(username);
     setActiveView('admin');
   };
 
   const handleAdminLogout = () => {
     setIsAdminLoggedIn(false);
+    setAdminUsername('');
     setActiveView('home');
   };
 
@@ -176,6 +188,32 @@ function App() {
           <div>
             {isAdminLoggedIn ? (
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginRight: '0.5rem' }}>
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    backgroundColor: 'var(--primary-200)',
+                    color: 'var(--primary-800)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    boxShadow: 'var(--shadow-sm)',
+                    border: '1px solid var(--primary-400)',
+                    textTransform: 'uppercase'
+                  }}>
+                    {adminUsername ? adminUsername.charAt(0) : 'A'}
+                  </div>
+                  <span style={{
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    color: 'var(--neutral-700)'
+                  }}>
+                    {adminUsername || 'Admin'}
+                  </span>
+                </div>
                 <button 
                   onClick={handleAdminLogout}
                   className="btn btn-outline"
@@ -318,8 +356,26 @@ function App() {
                     >
                       Tìm hiểu
                     </button>
-                    <div style={{ display: 'inline-flex', padding: '1.25rem', backgroundColor: 'var(--primary-300)', color: 'var(--neutral-800)', borderRadius: '50%', marginBottom: '1.5rem' }}>
-                      <Compass size={48} className="spin-slow" />
+                    <div style={{ 
+                      display: 'inline-flex', 
+                      borderRadius: '50%', 
+                      marginBottom: '1.5rem',
+                      overflow: 'hidden',
+                      width: '88px',
+                      height: '88px',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: 'var(--primary-300)'
+                    }}>
+                      <img 
+                        src="/logo AI.jpg" 
+                        alt="A.I. Logistics" 
+                        style={{ 
+                          width: '100%', 
+                          height: '100%', 
+                          objectFit: 'cover' 
+                        }} 
+                      />
                     </div>
                     <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem', color: 'var(--neutral-800)' }}>A.I. Logistics thực chiến</h3>
                     <p style={{ fontSize: '0.875rem', color: 'var(--neutral-500)', marginBottom: '1.5rem' }}>
@@ -337,7 +393,7 @@ function App() {
             </section>
 
             {/* Three Action Cards Section */}
-            <section className="section-padding" style={{ backgroundColor: '#ffffff' }}>
+            <section className="section-padding" style={{ backgroundColor: '#ffffff', paddingBottom: '2.5rem' }}>
               <div className="container">
 
 
@@ -390,7 +446,7 @@ function App() {
             </section>
 
             {/* Course Features / Statistics */}
-            <section className="gradient-bg" style={{ padding: '2.5rem 0', borderTop: '1px solid var(--primary-200)', borderBottom: '1px solid var(--primary-200)' }}>
+            <section className="gradient-bg" style={{ padding: '1.5rem 0', borderTop: '1px solid var(--primary-200)', borderBottom: '1px solid var(--primary-200)' }}>
               <div className="container">
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '2.5rem', textAlign: 'center' }}>
                   <div>
@@ -415,18 +471,19 @@ function App() {
         )}
 
         {/* ---------------- B. CONTROLLING OTHER PANELS ---------------- */}
-        <div className="container section-padding">
-          {activeView === 'quiz' && <QuizSection />}
-          {activeView === 'evaluation' && <EvaluationSection />}
-          {activeView === 'feedback' && <FeedbackSection />}
-          {activeView === 'admin' && isAdminLoggedIn && (
-            <AdminDashboard 
-              onLogout={handleAdminLogout} 
-              systemLogo={systemLogo}
-              onLogoUpdate={(newLogo) => setSystemLogo(newLogo)}
-            />
-          )}
-        </div>
+        {activeView !== 'home' && (
+          <div className="container section-padding">
+            {activeView === 'quiz' && <QuizSection />}
+            {activeView === 'evaluation' && <EvaluationSection />}
+            {activeView === 'feedback' && <FeedbackSection />}
+            {activeView === 'admin' && isAdminLoggedIn && (
+              <AdminDashboard 
+                systemLogo={systemLogo}
+                onLogoUpdate={(newLogo) => setSystemLogo(newLogo)}
+              />
+            )}
+          </div>
+        )}
 
       </main>
 
@@ -448,7 +505,7 @@ function App() {
             fontSize: '0.85rem',
             color: '#ffffff'
           }}>
-            <span>© 2026 ONEX Training Academy. All rights reserved.</span>
+            <span>© 2026 ONEX Training. All rights reserved.</span>
             <div style={{ display: 'flex', gap: '1.5rem' }}>
               <span style={{ cursor: 'pointer' }}>Điều khoản sử dụng</span>
               <span style={{ cursor: 'pointer' }}>Chính sách bảo mật</span>
@@ -524,22 +581,22 @@ function App() {
               marginBottom: '1.5rem',
               boxShadow: '0 8px 20px rgba(146, 64, 14, 0.05)'
             }}>
-              <img 
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(window.location.href)}`} 
-                alt="QR Code Link" 
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`${window.location.origin}${window.location.pathname}?view=quiz`)}`}
+                alt="QR Code Link"
                 style={{ width: '200px', height: '200px', display: 'block' }}
               />
             </div>
-            <div style={{ 
-              fontSize: '0.8rem', 
-              color: 'var(--primary-700)', 
-              wordBreak: 'break-all', 
+            <div style={{
+              fontSize: '0.8rem',
+              color: 'var(--primary-700)',
+              wordBreak: 'break-all',
               fontWeight: 700,
               backgroundColor: 'var(--primary-100)',
               padding: '0.5rem 0.75rem',
               borderRadius: 'var(--radius-sm)'
             }}>
-              {window.location.href}
+              {`${window.location.origin}${window.location.pathname}?view=quiz`}
             </div>
           </div>
         </div>

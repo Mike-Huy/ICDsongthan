@@ -5,7 +5,7 @@ import { X, Lock, User, Eye, EyeOff, AlertCircle } from 'lucide-react';
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onLoginSuccess: () => void;
+  onLoginSuccess: (username: string) => void;
 }
 
 export default function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps) {
@@ -33,7 +33,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginMod
       if (!adminErr && adminData && adminData.length > 0) {
         const adminUser = adminData[0];
         if (adminUser.password === password) {
-          onLoginSuccess();
+          onLoginSuccess(username.trim());
           setUsername('');
           setPassword('');
           onClose();
@@ -69,7 +69,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginMod
       }
 
       if (username.trim() === dbUsername && password === dbPassword) {
-        onLoginSuccess();
+        onLoginSuccess(username.trim());
         setUsername('');
         setPassword('');
         onClose();
@@ -80,7 +80,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginMod
       console.error("Error during admin login validation:", err);
       // Fallback credentials check offline if database connection fails or tables don't exist yet
       if (username.trim() === 'onex_sadmin' && password === 'admin123') {
-        onLoginSuccess();
+        onLoginSuccess(username.trim());
         setUsername('');
         setPassword('');
         onClose();
