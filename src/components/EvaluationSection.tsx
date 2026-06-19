@@ -315,8 +315,8 @@ export default function EvaluationSection() {
                     const handleOtherTextChange = (text: string) => {
                       const defaultLabel = otherOptionText || 'Khác';
                       let newParts = selectedParts.filter(p => p !== defaultLabel && !p.startsWith(`${defaultLabel}: `));
-                      if (text.trim()) {
-                        newParts.push(`${defaultLabel}: ${text.trim()}`);
+                      if (text) {
+                        newParts.push(`${defaultLabel}: ${text}`);
                       } else {
                         // If text is empty but checkbox is still checked
                         newParts.push(defaultLabel);
