@@ -14,6 +14,8 @@ import './App.css';
 
 type ActiveView = 'home' | 'quiz' | 'evaluation' | 'feedback' | 'admin' | 'course-survey';
 
+const ADMIN_SESSION_KEY = 'onex_admin_session';
+
 function App() {
   const [activeView, setActiveView] = useState<ActiveView>('home');
   const [courseSurveyCode, setCourseSurveyCode] = useState('');
@@ -22,6 +24,16 @@ function App() {
   const [adminUsername, setAdminUsername] = useState('');
   const [systemLogo, setSystemLogo] = useState<string | null>(null);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+
+  // Restore admin session after F5 / page reload
+  useEffect(() => {
+    const saved = sessionStorage.getItem(ADMIN_SESSION_KEY);
+    if (saved) {
+      setIsAdminLoggedIn(true);
+      setAdminUsername(saved);
+      setActiveView('admin');
+    }
+  }, []);
 
   // Navigate directly to the correct view when arriving via QR link
   useEffect(() => {
@@ -45,7 +57,7 @@ function App() {
           .select('value')
           .eq('key', 'system_logo')
           .maybeSingle();
-        
+
         if (!error && data) {
           setSystemLogo(data.value);
         }
@@ -57,12 +69,14 @@ function App() {
   }, []);
 
   const handleLoginSuccess = (username: string) => {
+    sessionStorage.setItem(ADMIN_SESSION_KEY, username);
     setIsAdminLoggedIn(true);
     setAdminUsername(username);
     setActiveView('admin');
   };
 
   const handleAdminLogout = () => {
+    sessionStorage.removeItem(ADMIN_SESSION_KEY);
     setIsAdminLoggedIn(false);
     setAdminUsername('');
     setActiveView('home');

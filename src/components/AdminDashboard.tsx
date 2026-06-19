@@ -1403,7 +1403,15 @@ export default function AdminDashboard({ systemLogo, onLogoUpdate }: AdminDashbo
                       </div>
                     ) : (
                       questions.map((q, idx) => (
-                        <div key={q.id} className="glass" style={{ padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', border: q.is_hidden ? '1.5px dashed var(--neutral-300)' : '1px solid var(--primary-300)', backgroundColor: q.is_hidden ? 'rgba(255, 255, 255, 0.5)' : 'var(--primary-100)', opacity: q.is_hidden ? 0.7 : 1 }}>
+                        <div key={q.id} style={{ 
+                          padding: '0.85rem 1.15rem', 
+                          borderRadius: 'var(--radius-md)', 
+                          border: q.is_hidden ? '1.5px dashed var(--neutral-300)' : '1.5px solid var(--primary-300)', 
+                          backgroundColor: q.is_hidden ? '#fafaf9' : 'var(--primary-100)', 
+                          opacity: q.is_hidden ? 0.7 : 1,
+                          boxShadow: 'var(--shadow-sm)',
+                          transition: 'var(--transition-smooth)'
+                        }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '0.5rem' }}>
                             <div style={{ fontWeight: 'bold', fontSize: '0.8rem', color: q.is_hidden ? 'var(--neutral-500)' : 'var(--neutral-800)' }}>
                               Câu {idx + 1}: {q.question_text} {q.is_hidden && <span style={{ marginLeft: '0.5rem', color: '#dc2626', fontSize: '0.7rem', fontWeight: 'normal', backgroundColor: '#fee2e2', padding: '0.15rem 0.4rem', borderRadius: 'var(--radius-sm)', border: '1px solid #fecaca' }}>Đang ẩn</span>}
