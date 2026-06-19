@@ -132,9 +132,23 @@ export default function QuizSection() {
   const sessionIdRef = useRef<number | null>(null);
   const timeLeftRef = useRef(0);
   const initialTimeLeftRef = useRef(0);
+  const stepRef = useRef<Step>('register');
 
-  // Keep timeLeftRef in sync for the periodic save interval
+  // Keep timeLeftRef and stepRef in sync for use inside callbacks
   useEffect(() => { timeLeftRef.current = timeLeft; }, [timeLeft]);
+  useEffect(() => { stepRef.current = step; }, [step]);
+
+  // Mark session as completed when unmounting at submitted1 (prevents other users from resuming)
+  useEffect(() => {
+    return () => {
+      if (stepRef.current === 'submitted1' && sessionIdRef.current) {
+        supabase.from('onex_quiz_sessions')
+          .update({ is_completed: true })
+          .eq('id', sessionIdRef.current)
+          .then(() => {});
+      }
+    };
+  }, []);
 
   const loadQuiz = async () => {
     setIsLoading(true);
@@ -199,7 +213,13 @@ export default function QuizSection() {
             clearInterval(timerRef.current!);
             if (step === 'testing') submitQuizRef.current();
             else if (step === 'retry') submitRetryRef.current();
-            // For 'submitted1': timer just stops at 0:00, retry button becomes disabled
+            else if (step === 'submitted1' && sessionIdRef.current) {
+              // Timer expired for retry window — close out the session so no other user can resume it
+              supabase.from('onex_quiz_sessions')
+                .update({ is_completed: true })
+                .eq('id', sessionIdRef.current)
+                .then(() => {});
+            }
             return 0;
           }
           return prev - 1;
@@ -1355,6 +1375,15 @@ export default function QuizSection() {
               <p style={{ fontSize: '0.9rem', color: 'var(--neutral-500)' }}>
                 Hệ thống tìm thấy bài làm chưa hoàn thành của <strong>{resumeData.fullname || fullname}</strong>.
               </p>
+              {resumeData.fullname && resumeData.fullname.trim().toLowerCase() !== fullname.trim().toLowerCase() && (
+                <div style={{
+                  backgroundColor: '#fef3c7', border: '1px solid #f59e0b',
+                  borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem', marginTop: '0.75rem',
+                  fontSize: '0.82rem', color: '#92400e', textAlign: 'left',
+                }}>
+                  ⚠️ Phiên này thuộc về <strong>{resumeData.fullname}</strong>, không phải <strong>{fullname}</strong>. Vui lòng nhấn <strong>"Làm lại từ đầu"</strong> để bắt đầu phiên mới của bạn.
+                </div>
+              )}
             </div>
 
             {/* Session info */}
