@@ -1019,6 +1019,60 @@ export default function AdminDashboard({ systemLogo, onLogoUpdate }: AdminDashbo
     XLSX.writeFile(workbook, `ONEX_KetQuaThi_${new Date().toISOString().split('T')[0]}.xls`, { bookType: 'xls' });
   };
 
+  const handleExportEvalXLS = () => {
+    if (evalSubmissions.length === 0) {
+      alert('Không có dữ liệu đánh giá khóa học để xuất.');
+      return;
+    }
+
+    const data = evalSubmissions.map((s, idx) => {
+      const row: Record<string, any> = {
+        'STT': idx + 1,
+        'Mã Nhân Viên': s.student_code,
+        'Họ Và Tên': s.fullname,
+        'Thời Gian Nộp': new Date(s.created_at).toLocaleString('vi-VN'),
+      };
+
+      // Add columns for each question
+      evalQuestions.forEach((eq) => {
+        const ansVal = s.answers[String(eq.id)];
+        
+        // Clean question text for column header
+        const questionLines = eq.question_text.split('\n').map(l => l.trim()).filter(Boolean);
+        const optionLines = questionLines.slice(1).filter(line => line.startsWith('-') || line.startsWith('*') || line.startsWith('•'));
+        const cleanHeader = optionLines.length > 0 ? questionLines[0] : eq.question_text;
+        
+        if (eq.question_type === 'rating') {
+          row[cleanHeader] = ansVal ? `${ansVal}/5` : '';
+        } else {
+          // Replace our double-semicolon separator with comma for standard spreadsheet viewing
+          row[cleanHeader] = ansVal ? String(ansVal).replace(/;;\s*/g, ', ') : '';
+        }
+      });
+
+      return row;
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    
+    // Set dynamic column widths
+    const cols = [
+      { wch: 6 }, // STT
+      { wch: 16 }, // Mã Nhân Viên
+      { wch: 28 }, // Họ Và Tên
+      { wch: 22 }, // Thời Gian Nộp
+    ];
+    // For each question column, set a wider column width
+    evalQuestions.forEach(() => {
+      cols.push({ wch: 35 });
+    });
+    worksheet['!cols'] = cols;
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Đánh Giá Khóa Học');
+    XLSX.writeFile(workbook, `ONEX_DanhGiaKhoaHoc_${new Date().toISOString().split('T')[0]}.xls`, { bookType: 'xls' });
+  };
+
   // Filter Submissions by Search
   const filteredSubmissions = submissions.filter(s =>
     s.fullname.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -1170,6 +1224,11 @@ export default function AdminDashboard({ systemLogo, onLogoUpdate }: AdminDashbo
                 {resultsSubTab === 'quiz_results' && (
                   <button onClick={handleExportXLS} className="btn btn-secondary" style={{ fontSize: '0.85rem' }}>
                     <Download size={14} /> Xuất Excel (.xls)
+                  </button>
+                )}
+                {resultsSubTab === 'eval_results' && (
+                  <button onClick={handleExportEvalXLS} className="btn btn-secondary" style={{ fontSize: '0.85rem' }}>
+                    <Download size={14} /> Xuất danh sách đánh giá (.xls)
                   </button>
                 )}
               </div>

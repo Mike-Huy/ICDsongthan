@@ -274,8 +274,8 @@ export default function EvaluationSection() {
                     // Parse options
                     const options = optionLines.map(line => line.replace(/^[-*•]\s*/, '').trim());
                     const currentAnswer = String(answers[q.id] || '');
-                    const selectedParts = currentAnswer.includes(';;') 
-                      ? currentAnswer.split(';; ').map(s => s.trim()).filter(Boolean)
+                    const selectedParts = currentAnswer.includes(';;')
+                      ? currentAnswer.split(';; ').filter(s => s.trim())
                       : currentAnswer.split(', ').map(s => s.trim()).filter(Boolean);
 
                     // Find if there's a "Khác" option using robust whole-word check
