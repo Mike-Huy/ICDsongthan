@@ -1570,7 +1570,7 @@ export default function AdminDashboard({ systemLogo, onLogoUpdate }: AdminDashbo
                   evalQuestions.map((eq, idx) => (
                     <div key={eq.id} className="glass" style={{ padding: '1.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--primary-200)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
-                        <strong style={{ color: 'var(--neutral-800)' }}>{idx + 1}. {eq.question_text}</strong>
+                        <strong style={{ color: 'var(--neutral-800)', whiteSpace: 'pre-wrap', display: 'block', lineHeight: '1.5' }}>{idx + 1}. {eq.question_text}</strong>
                         <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.35rem', fontSize: '0.75rem', color: 'var(--neutral-500)' }}>
                           <span>Loại câu hỏi: 
                             <strong style={{ marginLeft: '0.2rem', color: 'var(--primary-700)' }}>
