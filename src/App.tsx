@@ -430,7 +430,7 @@ function App() {
                     </div>
                     <h3 style={{ fontSize: '1.35rem', marginBottom: '0.75rem', color: 'var(--neutral-800)' }}>1. Bài Thu Hoạch</h3>
                     <p style={{ color: 'var(--neutral-500)', fontSize: '0.95rem', marginBottom: '2rem', flex: 1 }}>
-                      Tham gia trả lời 5 câu hỏi trắc nghiệm đánh giá tổng hợp các kỹ năng cốt lõi về quy trình chuỗi cung ứng và vận tải hàng hóa. Nhận điểm số ngay lập tức.
+                      Tham gia trả lời các câu hỏi trắc nghiệm đánh giá tổng hợp các kỹ năng cốt lõi về quy trình chuỗi cung ứng và vận tải hàng hóa. Nhận điểm số ngay lập tức.
                     </p>
                     <button onClick={() => setActiveView('quiz')} className="btn btn-primary" style={{ width: '100%' }}>
                       Bắt đầu làm bài
