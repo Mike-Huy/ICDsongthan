@@ -274,7 +274,9 @@ export default function EvaluationSection() {
                     // Parse options
                     const options = optionLines.map(line => line.replace(/^[-*•]\s*/, '').trim());
                     const currentAnswer = String(answers[q.id] || '');
-                    const selectedParts = currentAnswer.split(', ').map(s => s.trim()).filter(Boolean);
+                    const selectedParts = currentAnswer.includes(';;') 
+                      ? currentAnswer.split(';; ').map(s => s.trim()).filter(Boolean)
+                      : currentAnswer.split(', ').map(s => s.trim()).filter(Boolean);
 
                     // Find if there's a "Khác" option using robust whole-word check
                     const isOtherOption = (opt: string) => {
@@ -297,7 +299,7 @@ export default function EvaluationSection() {
                       if (otherPart) {
                         newParts.push(otherPart);
                       }
-                      handleTextChange(q.id, newParts.join(', '));
+                      handleTextChange(q.id, newParts.join(';; '));
                     };
 
                     const handleOtherCheckboxChange = (checked: boolean) => {
@@ -307,7 +309,7 @@ export default function EvaluationSection() {
                         const defaultLabel = otherOptionText || 'Khác';
                         newParts.push(currentOtherText ? `${defaultLabel}: ${currentOtherText}` : defaultLabel);
                       }
-                      handleTextChange(q.id, newParts.join(', '));
+                      handleTextChange(q.id, newParts.join(';; '));
                     };
 
                     const handleOtherTextChange = (text: string) => {
@@ -319,7 +321,7 @@ export default function EvaluationSection() {
                         // If text is empty but checkbox is still checked
                         newParts.push(defaultLabel);
                       }
-                      handleTextChange(q.id, newParts.join(', '));
+                      handleTextChange(q.id, newParts.join(';; '));
                     };
 
                     return (

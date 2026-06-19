@@ -1314,7 +1314,15 @@ export default function AdminDashboard({ systemLogo, onLogoUpdate }: AdminDashbo
                                       {ansVal ? '★'.repeat(ansVal) + '☆'.repeat(5 - ansVal) : 'Chưa chấm'} ({ansVal}/5)
                                     </span>
                                   ) : (
-                                    <span style={{ color: 'var(--neutral-800)' }}>{ansVal || '(Không ghi ý kiến)'}</span>
+                                    <span style={{ color: 'var(--neutral-800)', whiteSpace: 'pre-wrap', display: 'block', lineHeight: '1.4', marginTop: '0.25rem' }}>
+                                      {ansVal ? (
+                                        String(ansVal).includes(';;') ? (
+                                          String(ansVal).split(/;;\s*/).map((item, i) => (
+                                            <span key={i} style={{ display: 'block', paddingLeft: '0.75rem', textIndent: '-0.75rem' }}>• {item}</span>
+                                          ))
+                                        ) : ansVal
+                                      ) : '(Không ghi ý kiến)'}
+                                    </span>
                                   )}
                                 </div>
                               );
