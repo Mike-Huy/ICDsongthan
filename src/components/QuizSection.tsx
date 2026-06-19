@@ -119,7 +119,7 @@ export default function QuizSection() {
   const [retryResult, setRetryResult] = useState<{ score: number; correctAnswers: number; totalQuestions: number } | null>(null);
 
   // Session persistence states
-  const [sessionId, setSessionId] = useState<number | null>(null);
+  const [, setSessionId] = useState<number | null>(null);
   const [showResumeModal, setShowResumeModal] = useState(false);
   const [resumeData, setResumeData] = useState<any>(null);
   const [isChecking, setIsChecking] = useState(false);
@@ -566,10 +566,9 @@ export default function QuizSection() {
               <ClipboardCheck size={36} />
             </div>
             <h2 style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>{quiz.title}</h2>
-            <p style={{ maxWidth: '600px', margin: '0 auto' }}>{quiz.description}</p>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', marginTop: '1.5rem', flexWrap: 'wrap' }}>
-              <span className="badge badge-primary">Số câu hỏi: {questions.length} câu</span>
-              <span className="badge badge-primary"><Clock size={12} style={{ marginRight: '0.25rem' }} /> Thời gian: {quiz.duration_minutes} phút</span>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', marginTop: '1.25rem' }}>
+              <span className="badge badge-primary">SỐ CÂU HỎI: {questions.length} CÂU</span>
+              <span className="badge badge-primary"><Clock size={12} style={{ marginRight: '0.25rem' }} /> THỜI GIAN: {quiz.duration_minutes} PHÚT</span>
             </div>
           </div>
           <form onSubmit={handleRegister} style={{ maxWidth: '500px', margin: '0 auto' }}>
