@@ -15,6 +15,7 @@ create table if not exists public.onex_questions (
     options jsonb not null, -- Array of strings e.g. ["A", "B", "C", "D"]
     correct_option_index integer not null, -- 0-based index
     score integer not null default 10,
+    is_hidden boolean not null default false,
     created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
@@ -137,6 +138,80 @@ alter table public.onex_admins disable row level security;
 
 -- Seed default super admin user
 insert into public.onex_admins (username, password, role, permissions)
-values 
+values
 ('onex_sadmin', 'admin123', 'super_admin', '["quiz_editor", "eval_editor", "settings", "submissions", "user_management"]'::jsonb)
 on conflict (username) do nothing;
+
+-- 9. Create onex_courses table for course survey management
+create table if not exists public.onex_courses (
+    id bigint primary key generated always as identity,
+    course_code text not null unique,
+    name text not null,
+    description text,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- 10. Create onex_course_survey_responses table
+create table if not exists public.onex_course_survey_responses (
+    id bigint primary key generated always as identity,
+    course_id bigint references public.onex_courses(id) on delete set null,
+    course_code text not null,
+    fullname text not null,
+    employee_code text not null,
+    hv_code text not null unique,
+    answers jsonb not null,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Disable Row Level Security (RLS) for new tables
+alter table public.onex_courses disable row level security;
+alter table public.onex_course_survey_responses disable row level security;
+
+-- Index for faster lookup by course_code
+create index if not exists idx_course_survey_responses_course_code on public.onex_course_survey_responses(course_code);
+create index if not exists idx_course_survey_responses_hv_code on public.onex_course_survey_responses(hv_code);
+
+-- 11. Create onex_quiz_sessions table for in-progress quiz state persistence
+create table if not exists public.onex_quiz_sessions (
+    id bigint primary key generated always as identity,
+    student_code text not null,
+    fullname text not null,
+    quiz_id bigint references public.onex_quizzes(id) on delete set null,
+    step text not null default 'testing',        -- 'testing' | 'retry'
+    current_idx integer not null default 0,
+    answers_json jsonb not null default '{}',    -- { "questionIdx": chosenOptionIdx }
+    time_left integer not null default 0,        -- remaining seconds
+    retry_indices jsonb,                          -- array of wrong question indices
+    retry_answers_json jsonb,                     -- { "questionIdx": chosenOptionIdx }
+    retry_current_idx integer not null default 0,
+    is_completed boolean not null default false,
+    started_at timestamp with time zone default timezone('utc'::text, now()) not null,
+    updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.onex_quiz_sessions disable row level security;
+create index if not exists idx_quiz_sessions_student_code on public.onex_quiz_sessions(student_code);
+
+-- MIGRATION FOR EXISTING DATABASES:
+-- If your database is already initialized, please execute the following SQL in your Supabase SQL Editor:
+-- ALTER TABLE public.onex_questions ADD COLUMN IF NOT EXISTS is_hidden boolean not null default false;
+
+-- Migration for quiz session persistence (run this if database already exists):
+-- CREATE TABLE IF NOT EXISTS public.onex_quiz_sessions (
+--     id bigint primary key generated always as identity,
+--     student_code text not null,
+--     fullname text not null,
+--     quiz_id bigint references public.onex_quizzes(id) on delete set null,
+--     step text not null default 'testing',
+--     current_idx integer not null default 0,
+--     answers_json jsonb not null default '{}',
+--     time_left integer not null default 0,
+--     retry_indices jsonb,
+--     retry_answers_json jsonb,
+--     retry_current_idx integer not null default 0,
+--     is_completed boolean not null default false,
+--     started_at timestamp with time zone default timezone('utc'::text, now()) not null,
+--     updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+-- );
+-- ALTER TABLE public.onex_quiz_sessions DISABLE ROW LEVEL SECURITY;
+-- CREATE INDEX IF NOT EXISTS idx_quiz_sessions_student_code ON public.onex_quiz_sessions(student_code);
+

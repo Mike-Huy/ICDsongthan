@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import QuizSection from './components/QuizSection';
 import EvaluationSection from './components/EvaluationSection';
 import FeedbackSection from './components/FeedbackSection';
+import CourseSurveySection from './components/CourseSurveySection';
 import LoginModal from './components/LoginModal';
 import AdminDashboard from './components/AdminDashboard';
 import { 
@@ -11,21 +12,26 @@ import {
 import { supabase } from './supabaseClient';
 import './App.css';
 
-type ActiveView = 'home' | 'quiz' | 'evaluation' | 'feedback' | 'admin';
+type ActiveView = 'home' | 'quiz' | 'evaluation' | 'feedback' | 'admin' | 'course-survey';
 
 function App() {
   const [activeView, setActiveView] = useState<ActiveView>('home');
+  const [courseSurveyCode, setCourseSurveyCode] = useState('');
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const [adminUsername, setAdminUsername] = useState('');
   const [systemLogo, setSystemLogo] = useState<string | null>(null);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
 
-  // Navigate directly to the correct view when arriving via QR link (?view=quiz)
+  // Navigate directly to the correct view when arriving via QR link
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const view = params.get('view') as ActiveView | null;
-    if (view && ['quiz', 'evaluation', 'feedback'].includes(view)) {
+    if (view === 'course-survey') {
+      const code = params.get('code') || '';
+      setCourseSurveyCode(code);
+      setActiveView('course-survey');
+    } else if (view && ['quiz', 'evaluation', 'feedback'].includes(view)) {
       setActiveView(view);
     }
   }, []);
@@ -127,7 +133,7 @@ function App() {
           </div>
 
           {/* Central Navigation Tabs */}
-          {activeView !== 'admin' && (
+          {activeView !== 'admin' && activeView !== 'course-survey' && (
             <nav style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
               <button 
                 onClick={() => setActiveView('home')}
@@ -472,12 +478,13 @@ function App() {
 
         {/* ---------------- B. CONTROLLING OTHER PANELS ---------------- */}
         {activeView !== 'home' && (
-          <div className="container section-padding">
+          <div className={activeView !== 'course-survey' ? 'container section-padding' : 'container'} style={activeView === 'course-survey' ? { paddingTop: '2.5rem', paddingBottom: '3rem' } : {}}>
             {activeView === 'quiz' && <QuizSection />}
             {activeView === 'evaluation' && <EvaluationSection />}
             {activeView === 'feedback' && <FeedbackSection />}
+            {activeView === 'course-survey' && <CourseSurveySection courseCode={courseSurveyCode} />}
             {activeView === 'admin' && isAdminLoggedIn && (
-              <AdminDashboard 
+              <AdminDashboard
                 systemLogo={systemLogo}
                 onLogoUpdate={(newLogo) => setSystemLogo(newLogo)}
               />

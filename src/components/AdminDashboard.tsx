@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../supabaseClient';
-import { 
-  Users, BookOpen, Star, Settings, 
-  Plus, Edit, Trash2, Save, Download, Upload, Search, 
-  RefreshCw, X, ShieldAlert
+import {
+  Users, BookOpen, Star, Settings, ClipboardList,
+  Plus, Edit, Trash2, Save, Download, Upload, Search,
+  RefreshCw, X, ShieldAlert, Eye, EyeOff
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import CourseSurveyAdmin from './CourseSurveyAdmin';
 
 interface Question {
   id: string | number;
@@ -15,6 +16,7 @@ interface Question {
   options: string[];
   correct_option_index: number;
   score: number;
+  is_hidden?: boolean;
 }
 
 interface Quiz {
@@ -69,8 +71,8 @@ interface AdminDashboardProps {
 }
 
 export default function AdminDashboard({ systemLogo, onLogoUpdate }: AdminDashboardProps) {
-  // Tabs: 'submissions' | 'quiz_editor' | 'eval_editor' | 'settings' | 'user_management'
-  const [activeTab, setActiveTab] = useState<'submissions' | 'quiz_editor' | 'eval_editor' | 'settings' | 'user_management'>('submissions');
+  // Tabs: 'submissions' | 'quiz_editor' | 'eval_editor' | 'settings' | 'user_management' | 'course_survey'
+  const [activeTab, setActiveTab] = useState<'submissions' | 'quiz_editor' | 'eval_editor' | 'settings' | 'user_management' | 'course_survey'>('submissions');
   
   // Results view sub-tabs: 'quiz_results' | 'eval_results' | 'feedbacks'
   const [resultsSubTab, setResultsSubTab] = useState<'quiz_results' | 'eval_results' | 'feedbacks'>('quiz_results');
@@ -720,7 +722,8 @@ export default function AdminDashboard({ systemLogo, onLogoUpdate }: AdminDashbo
         question_text: '',
         options: ['', '', '', ''],
         correct_option_index: 0,
-        score: 10
+        score: 10,
+        is_hidden: false
       });
     }
     setIsQuestionModalOpen(true);
@@ -744,7 +747,8 @@ export default function AdminDashboard({ systemLogo, onLogoUpdate }: AdminDashbo
         question_text: editingQuestion.question_text,
         options: filteredOptions,
         correct_option_index: Number(editingQuestion.correct_option_index || 0),
-        score: Number(editingQuestion.score || 10)
+        score: Number(editingQuestion.score || 10),
+        is_hidden: editingQuestion.is_hidden || false
       };
 
       if (editingQuestion.id) {
@@ -782,6 +786,28 @@ export default function AdminDashboard({ systemLogo, onLogoUpdate }: AdminDashbo
       }
     } catch (err: any) {
       alert(`Lỗi khi xóa câu hỏi: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleHideQuestion = async (q: Question) => {
+    setLoading(true);
+    try {
+      const newHiddenState = !q.is_hidden;
+      const { error } = await supabase
+        .from('onex_questions')
+        .update({ is_hidden: newHiddenState })
+        .eq('id', q.id);
+      if (error) throw error;
+      
+      // Reload questions
+      if (selectedQuiz) {
+        const { data } = await supabase.from('onex_questions').select('*').eq('quiz_id', selectedQuiz.id).order('id', { ascending: true });
+        setQuestions(data || []);
+      }
+    } catch (err: any) {
+      alert(`Lỗi khi ẩn/hiện câu hỏi: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -959,7 +985,15 @@ export default function AdminDashboard({ systemLogo, onLogoUpdate }: AdminDashbo
             <Star size={18} />
             <span>Quản lý khảo sát</span>
           </button>
-          
+
+          <button
+            onClick={() => setActiveTab('course_survey')}
+            className={`sidebar-nav-btn ${activeTab === 'course_survey' ? 'active' : ''}`}
+          >
+            <ClipboardList size={18} />
+            <span>Khảo sát khóa học</span>
+          </button>
+
           <button
             onClick={() => setActiveTab('settings')}
             className={`sidebar-nav-btn ${activeTab === 'settings' || activeTab === 'user_management' ? 'active' : ''}`}
@@ -1258,7 +1292,6 @@ export default function AdminDashboard({ systemLogo, onLogoUpdate }: AdminDashbo
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
               <div>
                 <h3 style={{ fontSize: '1.2rem', marginBottom: '0.25rem' }}>Cấu hình Đề thi & Câu hỏi</h3>
-                <p style={{ fontSize: '0.78rem', color: 'var(--neutral-500)' }}>Thêm, sửa đổi hoặc xóa các câu hỏi trong đề trắc nghiệm Logistics.</p>
               </div>
 
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -1363,20 +1396,23 @@ export default function AdminDashboard({ systemLogo, onLogoUpdate }: AdminDashbo
                 {loading ? (
                   <div style={{ textAlign: 'center', padding: '2rem' }}>Đang tải danh sách câu hỏi...</div>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
                     {questions.length === 0 ? (
                       <div style={{ border: '2px dashed var(--primary-200)', borderRadius: 'var(--radius-md)', padding: '3rem', textAlign: 'center', color: 'var(--neutral-400)' }}>
                         Chưa có câu hỏi nào được tạo trong đề thi này. Hãy nhấn "Thêm Câu Hỏi" ở trên.
                       </div>
                     ) : (
                       questions.map((q, idx) => (
-                        <div key={q.id} className="glass" style={{ padding: '1.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--primary-200)' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '0.75rem' }}>
-                            <div style={{ fontWeight: 'bold', fontSize: '0.8rem', color: 'var(--neutral-800)' }}>
-                              Câu {idx + 1}: {q.question_text}
+                        <div key={q.id} className="glass" style={{ padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', border: q.is_hidden ? '1.5px dashed var(--neutral-300)' : '1px solid var(--primary-300)', backgroundColor: q.is_hidden ? 'rgba(255, 255, 255, 0.5)' : 'var(--primary-100)', opacity: q.is_hidden ? 0.7 : 1 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '0.5rem' }}>
+                            <div style={{ fontWeight: 'bold', fontSize: '0.8rem', color: q.is_hidden ? 'var(--neutral-500)' : 'var(--neutral-800)' }}>
+                              Câu {idx + 1}: {q.question_text} {q.is_hidden && <span style={{ marginLeft: '0.5rem', color: '#dc2626', fontSize: '0.7rem', fontWeight: 'normal', backgroundColor: '#fee2e2', padding: '0.15rem 0.4rem', borderRadius: 'var(--radius-sm)', border: '1px solid #fecaca' }}>Đang ẩn</span>}
                             </div>
                             
                             <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+                              <button onClick={() => handleToggleHideQuestion(q)} className="btn btn-ghost" style={{ padding: '0.4rem', color: q.is_hidden ? 'var(--neutral-400)' : 'var(--primary-600)' }} title={q.is_hidden ? "Hiện câu hỏi" : "Ẩn câu hỏi"}>
+                                {q.is_hidden ? <EyeOff size={14} /> : <Eye size={14} />}
+                              </button>
                               <button onClick={() => handleOpenQuestionModal(q)} className="btn btn-ghost" style={{ padding: '0.4rem', color: 'var(--neutral-600)' }} title="Sửa">
                                 <Edit size={14} />
                               </button>
@@ -1386,23 +1422,20 @@ export default function AdminDashboard({ systemLogo, onLogoUpdate }: AdminDashbo
                             </div>
                           </div>
 
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.5rem', marginBottom: '0.75rem', paddingLeft: '0.5rem' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.5rem', marginBottom: 0, paddingLeft: '0.5rem' }}>
                             {q.options.map((opt, oIdx) => {
                               const isCorrect = oIdx === q.correct_option_index;
                               return (
                                 <div key={oIdx} style={{
                                   fontSize: '0.75rem',
-                                  padding: '0.5rem',
-                                  borderRadius: 'var(--radius-sm)',
-                                  backgroundColor: isCorrect ? '#ecfdf5' : '#ffffff',
-                                  border: isCorrect ? '1px solid #10b981' : '1px solid var(--primary-200)',
-                                  color: isCorrect ? '#047857' : 'var(--neutral-600)',
+                                  padding: '0.25rem 0',
+                                  color: isCorrect ? '#059669' : 'var(--neutral-400)',
                                   fontWeight: isCorrect ? 'bold' : 'normal',
                                   display: 'flex',
-                                  alignItems: 'center',
+                                  alignItems: 'flex-start',
                                   gap: '0.35rem'
                                 }}>
-                                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: isCorrect ? '#10b981' : 'var(--neutral-300)' }} />
+                                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: isCorrect ? '#059669' : 'var(--neutral-300)', marginTop: '0.3rem', flexShrink: 0 }} />
                                   <span>{opt}</span>
                                 </div>
                               );
@@ -1799,6 +1832,9 @@ export default function AdminDashboard({ systemLogo, onLogoUpdate }: AdminDashbo
           </div>
         )}
 
+        {/* ---------------- F. TAB: COURSE SURVEY ---------------- */}
+        {activeTab === 'course_survey' && <CourseSurveyAdmin />}
+
       </main>
 
       {/* ---------------- QUESTION CREATION / EDITING MODAL ---------------- */}
@@ -1885,6 +1921,19 @@ export default function AdminDashboard({ systemLogo, onLogoUpdate }: AdminDashbo
                     onChange={(e) => setEditingQuestion({ ...editingQuestion, score: Number(e.target.value) })}
                   />
                 </div>
+              </div>
+
+              <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '1rem', marginBottom: '0.5rem' }}>
+                <input
+                  type="checkbox"
+                  id="is_hidden"
+                  checked={editingQuestion.is_hidden || false}
+                  onChange={(e) => setEditingQuestion({ ...editingQuestion, is_hidden: e.target.checked })}
+                  style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                />
+                <label htmlFor="is_hidden" className="form-label" style={{ marginBottom: 0, cursor: 'pointer', userSelect: 'none', fontSize: '0.85rem', color: 'var(--neutral-700)' }}>
+                  Ẩn câu hỏi này trong đề thi của học viên (vẫn giữ nội dung)
+                </label>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem', borderTop: '1px solid var(--primary-200)', paddingTop: '1rem' }}>
