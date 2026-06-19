@@ -1308,7 +1308,13 @@ export default function AdminDashboard({ systemLogo, onLogoUpdate }: AdminDashbo
                               const ansVal = s.answers[String(eq.id)];
                               return (
                                 <div key={eq.id} style={{ fontSize: '0.875rem' }}>
-                                  <span style={{ color: 'var(--neutral-500)', fontWeight: 600 }}>{eq.question_text}:</span>{' '}
+                                  <span style={{ color: 'var(--neutral-500)', fontWeight: 600 }}>
+                                    {(() => {
+                                      const lines = eq.question_text.split('\n').map(l => l.trim()).filter(Boolean);
+                                      const optionLines = lines.slice(1).filter(line => line.startsWith('-') || line.startsWith('*') || line.startsWith('•'));
+                                      return optionLines.length > 0 ? lines[0] : eq.question_text;
+                                    })()}:
+                                  </span>{' '}
                                   {eq.question_type === 'rating' ? (
                                     <span style={{ color: 'var(--primary-600)', fontWeight: 'bold' }}>
                                       {ansVal ? '★'.repeat(ansVal) + '☆'.repeat(5 - ansVal) : 'Chưa chấm'} ({ansVal}/5)
