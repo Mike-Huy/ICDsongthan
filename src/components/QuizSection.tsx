@@ -560,7 +560,7 @@ export default function QuizSection() {
 
       {/* ── 1. REGISTER ── */}
       {step === 'register' && (
-        <div className="glass-card" style={{ padding: '2.5rem' }}>
+        <div className="glass-card card-body-pad" style={{ padding: '2.5rem' }}>
           <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
             <div style={{ display: 'inline-flex', padding: '1rem', backgroundColor: 'var(--primary-200)', borderRadius: '50%', color: 'var(--primary-800)', marginBottom: '1rem' }}>
               <ClipboardCheck size={36} />
@@ -573,11 +573,11 @@ export default function QuizSection() {
           </div>
           <form onSubmit={handleRegister} style={{ maxWidth: '500px', margin: '0 auto' }}>
             <div className="form-group">
-              <label className="form-label">Họ và tên học viên *</label>
+              <label className="form-label">Họ và tên nhân viên *</label>
               <input type="text" required className="form-input" placeholder="Nguyễn Văn A" value={fullname} onChange={(e) => setFullname(e.target.value)} />
             </div>
             <div className="form-group">
-              <label className="form-label">Mã số học viên *</label>
+              <label className="form-label">Mã nhân viên ICD *</label>
               <input type="text" required className="form-input" placeholder="ONEX-2026-XXXX" value={studentCode} onChange={(e) => setStudentCode(e.target.value)} />
             </div>
             <button
@@ -636,7 +636,7 @@ export default function QuizSection() {
             <div style={{ backgroundColor: 'var(--primary-500)', height: '100%', width: `${(Object.keys(answers).length / questions.length) * 100}%`, transition: 'var(--transition-smooth)' }} />
           </div>
 
-          <div className="glass-card" style={{ padding: '2.5rem', marginBottom: '1.5rem' }}>
+          <div className="glass-card card-body-pad" style={{ padding: '2.5rem', marginBottom: '1.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
               <span className="badge badge-primary">Câu {currentIdx + 1} / {questions.length}</span>
             </div>
@@ -806,7 +806,7 @@ export default function QuizSection() {
               <div style={{ backgroundColor: 'var(--error)', height: '100%', width: `${(Object.keys(retryAnswers).length / retryQuestionIndices.length) * 100}%`, transition: 'var(--transition-smooth)' }} />
             </div>
 
-            <div className="glass-card" style={{ padding: '2.5rem', marginBottom: '1.5rem', borderTop: '4px solid var(--error)' }}>
+            <div className="glass-card card-body-pad" style={{ padding: '2.5rem', marginBottom: '1.5rem', borderTop: '4px solid var(--error)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <span className="badge" style={{ backgroundColor: '#fef2f2', color: 'var(--error)', border: '1px solid var(--error)' }}>
                   Câu sai {retryCurrentIdx + 1} / {retryQuestionIndices.length}
@@ -941,7 +941,7 @@ export default function QuizSection() {
 
       {/* ── 4. RESULT ── */}
       {step === 'result' && (
-        <div className="glass-card" style={{ padding: '2.5rem' }}>
+        <div className="glass-card card-body-pad" style={{ padding: '2.5rem' }}>
           <style dangerouslySetInnerHTML={{ __html: `
             @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
             .q-circle-retry:hover { transform: scale(1.12); box-shadow: 0 4px 14px rgba(239,68,68,0.35); }

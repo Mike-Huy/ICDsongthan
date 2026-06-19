@@ -359,3 +359,83 @@ a, button {
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
 }
+
+/* ━━ RESPONSIVE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* Default: mobile-only elements hidden; mobile nav hidden */
+.mobile-only { display: none !important; }
+.mobile-bottom-nav { display: none; }
+
+/* Remove card hover lift on touch screens */
+@media (hover: none) {
+  .glass-card:hover {
+    transform: none;
+    box-shadow: 0 6px 16px rgba(146, 64, 14, 0.06);
+    border-color: rgba(217, 119, 6, 0.35);
+  }
+}
+
+/* ── Tablet & mobile (≤ 768px) ─────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Visibility toggles */
+  .desktop-only { display: none !important; }
+  .mobile-only  { display: flex !important; }
+
+  /* Hero: collapse 2-column grid to 1 column */
+  .hero-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem !important;
+  }
+  .hero-illustration { display: none !important; }
+  .hero-title { font-size: 2rem !important; }
+
+  /* Add bottom padding so content is not hidden under mobile nav */
+  .mobile-safe-bottom { padding-bottom: 72px; }
+
+  /* Mobile fixed bottom navigation bar */
+  .mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--primary-200);
+    z-index: 200;
+    padding: 0.4rem 0.25rem;
+    padding-bottom: calc(0.4rem + env(safe-area-inset-bottom, 0px));
+    justify-content: space-around;
+    align-items: stretch;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+  }
+
+  /* 2-column form grids become 1 column */
+  .form-2col {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+
+  /* 3-column survey grids become 1 column */
+  .survey-3col {
+    grid-template-columns: 1fr !important;
+    gap: 0.5rem !important;
+  }
+
+  /* Card padding reduction */
+  .card-body-pad { padding: 1.5rem !important; }
+
+  /* Star rating row: wrap label to next line */
+  .star-row { flex-wrap: wrap !important; }
+
+  /* Reduce section padding */
+  .section-padding { padding: 2rem 0; }
+}
+
+/* ── Small phone (≤ 480px) ──────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .container   { padding: 0 0.875rem; }
+  .hero-title  { font-size: 1.75rem !important; }
+  .card-body-pad { padding: 1.25rem !important; }
+}

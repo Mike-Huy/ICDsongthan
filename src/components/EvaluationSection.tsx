@@ -166,7 +166,7 @@ export default function EvaluationSection() {
 
           <form onSubmit={handleRegister} style={{ maxWidth: '500px', margin: '0 auto' }}>
             <div className="form-group">
-              <label className="form-label">Họ và tên học viên *</label>
+              <label className="form-label">Họ và tên nhân viên *</label>
               <input 
                 type="text" 
                 required 
@@ -177,7 +177,7 @@ export default function EvaluationSection() {
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Mã số học viên *</label>
+              <label className="form-label">Mã nhân viên ICD *</label>
               <input 
                 type="text" 
                 required 
@@ -221,8 +221,8 @@ export default function EvaluationSection() {
       {step === 'survey' && (
         <form onSubmit={handleSubmitSurvey} className="glass-card" style={{ padding: '2.5rem' }}>
           <div style={{ marginBottom: '2rem', borderBottom: '1px solid var(--primary-200)', paddingBottom: '1rem' }}>
-            <h2 style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>Khảo Sát Ý Kiến Học Viên</h2>
-            <p style={{ fontSize: '0.9rem', color: 'var(--neutral-500)' }}>Học viên: <strong>{fullname}</strong> ({studentCode})</p>
+            <h2 style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>Khảo Sát Ý Kiến Nhân Viên</h2>
+            <p style={{ fontSize: '0.9rem', color: 'var(--neutral-500)' }}>Nhân viên: <strong>{fullname}</strong> ({studentCode})</p>
           </div>
 
           {submitError && (
@@ -241,7 +241,7 @@ export default function EvaluationSection() {
 
                   {/* Rating Type */}
                   {q.question_type === 'rating' && (
-                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                    <div className="star-row" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                       {[1, 2, 3, 4, 5].map((star) => {
                         const active = star <= (answers[q.id] || 0);
                         return (
@@ -335,7 +335,7 @@ export default function EvaluationSection() {
           </div>
           <h2 style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>Gửi Đánh Giá Thành Công!</h2>
           <p style={{ maxWidth: '500px', margin: '0 auto 2rem', color: 'var(--neutral-600)' }}>
-            Cảm ơn học viên <strong>{fullname}</strong> đã dành thời gian đóng góp ý kiến. Những phản hồi quý báu của bạn sẽ giúp khóa học ONEX Training ngày càng hoàn thiện hơn.
+            Cảm ơn nhân viên <strong>{fullname}</strong> đã dành thời gian đóng góp ý kiến. Những phản hồi quý báu của bạn sẽ giúp khóa học ONEX Training ngày càng hoàn thiện hơn.
           </p>
           <button
             onClick={() => {

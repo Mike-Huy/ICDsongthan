@@ -5,9 +5,9 @@ import FeedbackSection from './components/FeedbackSection';
 import CourseSurveySection from './components/CourseSurveySection';
 import LoginModal from './components/LoginModal';
 import AdminDashboard from './components/AdminDashboard';
-import { 
-  Compass, Award, Star, MessageSquare, Lock, 
-  ShieldCheck, LogOut, QrCode, X
+import {
+  Compass, Award, Star, MessageSquare, Lock,
+  ShieldCheck, LogOut, QrCode, X, Home
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import './App.css';
@@ -132,9 +132,9 @@ function App() {
             )}
           </div>
 
-          {/* Central Navigation Tabs */}
+          {/* Central Navigation Tabs — hidden on mobile (replaced by bottom nav) */}
           {activeView !== 'admin' && activeView !== 'course-survey' && (
-            <nav style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+            <nav className="desktop-only" style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
               <button 
                 onClick={() => setActiveView('home')}
                 className={`btn btn-ghost ${activeView === 'home' ? 'active' : ''}`}
@@ -212,10 +212,11 @@ function App() {
                   }}>
                     {adminUsername ? adminUsername.charAt(0) : 'A'}
                   </div>
-                  <span style={{
+                  <span className="desktop-only" style={{
                     fontSize: '0.85rem',
                     fontWeight: 600,
-                    color: 'var(--neutral-700)'
+                    color: 'var(--neutral-700)',
+                    display: 'inline'
                   }}>
                     {adminUsername || 'Admin'}
                   </span>
@@ -270,14 +271,17 @@ function App() {
       </header>
 
       {/* 2. MAIN WORKSPACE */}
-      <main style={{ flex: 1, backgroundColor: 'var(--primary-50)' }}>
+      <main
+        className={activeView !== 'admin' && activeView !== 'course-survey' ? 'mobile-safe-bottom' : ''}
+        style={{ flex: 1, backgroundColor: 'var(--primary-50)' }}
+      >
         
         {/* ---------------- A. VIEW: HOME (LANDING PAGE) ---------------- */}
         {activeView === 'home' && (
           <div>
             {/* Hero Section */}
             <section className="gradient-bg" style={{ padding: '3rem 0 3.5rem', borderBottom: '1px solid var(--primary-200)' }}>
-              <div className="container" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '3rem', alignItems: 'center' }}>
+              <div className="container hero-grid" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '3rem', alignItems: 'center' }}>
                 
                 {/* Hero Text */}
                 <div style={{ animation: 'fadeIn 0.5s ease-out' }}>
@@ -285,12 +289,12 @@ function App() {
                     Chương trình đào tạo tại ICD Sóng Thần
                   </span>
                   
-                  <h1 style={{ fontSize: '3rem', color: 'var(--neutral-900)', fontWeight: 800, lineHeight: 1.15, marginBottom: '1.5rem' }}>
+                  <h1 className="hero-title" style={{ fontSize: '3rem', color: 'var(--neutral-900)', fontWeight: 800, lineHeight: 1.15, marginBottom: '1.5rem' }}>
                     Vận hành kho chuyên nghiệp - <span className="text-gradient">Professional Warehouse Operation & Control</span>
                   </h1>
                   
                   <p style={{ fontSize: '1.15rem', color: 'var(--neutral-600)', marginBottom: '2.5rem', maxWidth: '650px', lineHeight: 1.6 }}>
-                    Chào mừng bạn đến với hệ thống kiểm tra và đánh giá kết quả học tập dành cho học viên ONEX Training. Hãy thực hiện bài thu hoạch kiến thức và gửi đóng góp ý kiến để hoàn thiện khóa học tốt hơn.
+                    Chào mừng bạn đến với hệ thống kiểm tra và đánh giá kết quả học tập dành cho nhân viên ONEX Training. Hãy thực hiện bài thu hoạch kiến thức và gửi đóng góp ý kiến để hoàn thiện khóa học tốt hơn.
                   </p>
 
                   <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -321,8 +325,8 @@ function App() {
                   </div>
                 </div>
 
-                {/* Hero Illustration Side */}
-                <div style={{ display: 'flex', justifyContent: 'center', position: 'relative' }}>
+                {/* Hero Illustration Side — hidden on mobile */}
+                <div className="hero-illustration" style={{ display: 'flex', justifyContent: 'center', position: 'relative' }}>
                   <div style={{
                     width: '320px',
                     height: '320px',
@@ -457,7 +461,7 @@ function App() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '2.5rem', textAlign: 'center' }}>
                   <div>
                     <div style={{ fontSize: '2.75rem', fontWeight: 800, color: 'var(--primary-600)', marginBottom: '0.25rem' }}>+500</div>
-                    <div style={{ fontWeight: 700, color: 'var(--neutral-800)', fontSize: '1rem', marginBottom: '0.5rem' }}>Học Viên Đào Tạo</div>
+                    <div style={{ fontWeight: 700, color: 'var(--neutral-800)', fontSize: '1rem', marginBottom: '0.5rem' }}>Nhân Viên Đào Tạo</div>
                     <p style={{ fontSize: '0.85rem', color: 'var(--neutral-500)' }}>Cán bộ, nhân viên tại các ICD, cảng biển và doanh nghiệp Xuất nhập khẩu.</p>
                   </div>
                   <div>
@@ -607,6 +611,47 @@ function App() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Mobile Bottom Navigation — shown only on mobile (≤768px) for main views */}
+      {activeView !== 'admin' && activeView !== 'course-survey' && (
+        <nav className="mobile-bottom-nav" aria-label="Điều hướng chính">
+          {([
+            { view: 'home' as ActiveView,       icon: <Home size={22} />,          label: 'Trang chủ' },
+            { view: 'quiz' as ActiveView,        icon: <Award size={22} />,         label: 'Bài thi'   },
+            { view: 'evaluation' as ActiveView,  icon: <Star size={22} />,          label: 'Đánh giá'  },
+            { view: 'feedback' as ActiveView,    icon: <MessageSquare size={22} />, label: 'Góp ý'     },
+          ] as const).map(({ view, icon, label }) => {
+            const isActive = activeView === view;
+            return (
+              <button
+                key={view}
+                onClick={() => setActiveView(view)}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.2rem',
+                  padding: '0.35rem 0.25rem',
+                  border: 'none',
+                  background: isActive ? 'var(--primary-100)' : 'transparent',
+                  color: isActive ? 'var(--primary-700)' : 'var(--neutral-400)',
+                  fontSize: '0.65rem',
+                  fontWeight: isActive ? 700 : 500,
+                  cursor: 'pointer',
+                  borderRadius: 'var(--radius-sm)',
+                  fontFamily: 'inherit',
+                  transition: 'color 0.2s, background 0.2s',
+                }}
+              >
+                {icon}
+                <span>{label}</span>
+              </button>
+            );
+          })}
+        </nav>
       )}
 
       <style dangerouslySetInnerHTML={{__html: `

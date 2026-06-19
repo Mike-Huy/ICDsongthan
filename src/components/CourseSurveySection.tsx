@@ -303,7 +303,7 @@ export default function CourseSurveySection({ courseCode }: Props) {
               <p style={{ fontWeight: 700, color: 'var(--neutral-800)', marginBottom: '0.75rem', lineHeight: 1.5 }}>
                 2. Nếu mô tả trải nghiệm học tập của mình bằng ba từ khóa, Anh/Chị sẽ lựa chọn những từ nào?
               </p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
+              <div className="survey-3col" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
                 {[0, 1, 2].map(idx => (
                   <input
                     key={idx}
