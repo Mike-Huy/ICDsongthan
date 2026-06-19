@@ -392,21 +392,22 @@ export default function EvaluationSection() {
                               
                               {isOtherChecked && (
                                 <div style={{ paddingLeft: '1.75rem', marginTop: '0.25rem' }} className="fade-in">
-                                  <input
-                                    type="text"
+                                  <textarea
                                     placeholder="Vui lòng nhập thông tin chi tiết..."
+                                    rows={3}
                                     value={otherText === defaultLabel ? '' : otherText}
                                     onChange={(e) => handleOtherTextChange(e.target.value)}
                                     style={{
-                                      border: 'none',
-                                      borderBottom: '2px solid var(--primary-300)',
+                                      border: '1px solid var(--neutral-300)',
+                                      borderRadius: 'var(--radius-sm)',
                                       outline: 'none',
-                                      backgroundColor: 'transparent',
+                                      backgroundColor: 'white',
                                       fontSize: '0.95rem',
-                                      padding: '0.35rem 0',
+                                      padding: '0.5rem 0.75rem',
                                       width: '100%',
                                       color: 'var(--neutral-800)',
                                       fontWeight: 500,
+                                      resize: 'vertical',
                                     }}
                                   />
                                 </div>
