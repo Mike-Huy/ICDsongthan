@@ -82,7 +82,7 @@ export default function EvaluationSection() {
 
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullname || !studentCode || !email || !phone) return;
+    if (!fullname || !studentCode) return;
     setStep('survey');
     
     // Initialize empty answers
@@ -185,28 +185,6 @@ export default function EvaluationSection() {
                 placeholder="ONEX-2026-XXXX" 
                 value={studentCode}
                 onChange={(e) => setStudentCode(e.target.value)}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Địa chỉ Email *</label>
-              <input 
-                type="email" 
-                required 
-                className="form-input" 
-                placeholder="email@example.com" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Số điện thoại *</label>
-              <input 
-                type="tel" 
-                required 
-                className="form-input" 
-                placeholder="0901234567" 
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
               />
             </div>
 

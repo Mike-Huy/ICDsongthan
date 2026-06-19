@@ -1294,7 +1294,7 @@ export default function AdminDashboard({ systemLogo, onLogoUpdate }: AdminDashbo
                             <div>
                               <strong style={{ fontSize: '1rem', color: 'var(--neutral-800)' }}>{s.fullname}</strong>
                               <span style={{ fontSize: '0.85rem', color: 'var(--neutral-500)', marginLeft: '0.5rem' }}>
-                                (Mã: <code>{s.student_code}</code> | {s.email} | {s.phone})
+                                (Mã: <code>{s.student_code}</code>{s.email ? ` | ${s.email}` : ''}{s.phone ? ` | ${s.phone}` : ''})
                               </span>
                             </div>
                             <span style={{ fontSize: '0.8rem', color: 'var(--neutral-400)' }}>
