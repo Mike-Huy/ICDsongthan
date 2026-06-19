@@ -429,37 +429,101 @@ export default function CourseSurveySection({ courseCode }: Props) {
               <p style={{ fontWeight: 700, color: 'var(--neutral-800)', marginBottom: '0.75rem', lineHeight: 1.5 }}>
                 7. Những chủ đề đào tạo nào dưới đây Anh/Chị quan tâm trong tương lai?
               </p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '0.5rem' }}>
-                {TRAINING_TOPICS.map(topic => {
-                  const isSelected = answers.q7.includes(topic);
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '0.5rem' }}>
+                  {TRAINING_TOPICS.map(topic => {
+                    const isSelected = answers.q7.includes(topic);
+                    return (
+                      <label
+                        key={topic}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.6rem',
+                          cursor: 'pointer',
+                          padding: '0.65rem 0.9rem',
+                          borderRadius: 'var(--radius-sm)',
+                          border: isSelected ? '1.5px solid var(--primary-400)' : '1px solid var(--neutral-200)',
+                          backgroundColor: isSelected ? 'var(--primary-50)' : 'white',
+                          fontSize: '0.9rem',
+                          color: isSelected ? 'var(--primary-800)' : 'var(--neutral-600)',
+                          fontWeight: isSelected ? 600 : 400,
+                          transition: 'var(--transition-smooth)',
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleTopicToggle(topic)}
+                          style={{ accentColor: 'var(--primary-500)' }}
+                        />
+                        {topic}
+                      </label>
+                    );
+                  })}
+                </div>
+
+                {/* Other Option */}
+                {(() => {
+                  const otherPart = answers.q7.find(t => t.startsWith('Khác: ') || t === 'Khác');
+                  const isOtherChecked = !!otherPart;
+                  const otherText = otherPart ? otherPart.replace(/^Khác:\s*/, '') : '';
+
+                  const handleOtherCheckboxChange = (checked: boolean) => {
+                    let newQ7 = answers.q7.filter(t => !t.startsWith('Khác: ') && t !== 'Khác');
+                    if (checked) {
+                      newQ7.push(otherText.trim() ? `Khác: ${otherText.trim()}` : 'Khác');
+                    }
+                    setAnswers({ ...answers, q7: newQ7 });
+                  };
+
+                  const handleOtherTextChange = (text: string) => {
+                    let newQ7 = answers.q7.filter(t => !t.startsWith('Khác: ') && t !== 'Khác');
+                    if (text.trim()) {
+                      newQ7.push(`Khác: ${text.trim()}`);
+                    } else if (isOtherChecked) {
+                      newQ7.push('Khác');
+                    }
+                    setAnswers({ ...answers, q7: newQ7 });
+                  };
+
                   return (
-                    <label
-                      key={topic}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.6rem',
-                        cursor: 'pointer',
-                        padding: '0.65rem 0.9rem',
-                        borderRadius: 'var(--radius-sm)',
-                        border: isSelected ? '1.5px solid var(--primary-400)' : '1px solid var(--neutral-200)',
-                        backgroundColor: isSelected ? 'var(--primary-50)' : 'white',
-                        fontSize: '0.9rem',
-                        color: isSelected ? 'var(--primary-800)' : 'var(--neutral-600)',
-                        fontWeight: isSelected ? 600 : 400,
-                        transition: 'var(--transition-smooth)',
-                      }}
-                    >
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.6rem',
+                      padding: '0.65rem 0.9rem',
+                      borderRadius: 'var(--radius-sm)',
+                      border: isOtherChecked ? '1.5px solid var(--primary-400)' : '1px solid var(--neutral-200)',
+                      backgroundColor: isOtherChecked ? 'var(--primary-50)' : 'white',
+                      marginTop: '0.25rem'
+                    }}>
                       <input
                         type="checkbox"
-                        checked={isSelected}
-                        onChange={() => handleTopicToggle(topic)}
+                        checked={isOtherChecked}
+                        onChange={(e) => handleOtherCheckboxChange(e.target.checked)}
                         style={{ accentColor: 'var(--primary-500)' }}
                       />
-                      {topic}
-                    </label>
+                      <span style={{ fontSize: '0.9rem', color: isOtherChecked ? 'var(--primary-800)' : 'var(--neutral-600)', fontWeight: isOtherChecked ? 600 : 400, whiteSpace: 'nowrap' }}>Khác:</span>
+                      <input
+                        type="text"
+                        placeholder="Nhập chủ đề quan tâm khác của bạn..."
+                        value={otherText}
+                        onChange={(e) => handleOtherTextChange(e.target.value)}
+                        style={{
+                          border: 'none',
+                          borderBottom: '1px solid var(--neutral-300)',
+                          outline: 'none',
+                          backgroundColor: 'transparent',
+                          fontSize: '0.9rem',
+                          padding: '0.1rem 0.4rem',
+                          width: '100%',
+                          color: 'var(--neutral-800)'
+                        }}
+                      />
+                    </div>
                   );
-                })}
+                })()}
               </div>
             </div>
 

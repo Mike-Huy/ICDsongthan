@@ -2180,13 +2180,14 @@ export default function AdminDashboard({ systemLogo, onLogoUpdate }: AdminDashbo
             <form onSubmit={handleSaveEval}>
               <div className="form-group">
                 <label className="form-label">Nội dung câu hỏi khảo sát *</label>
-                <input
-                  type="text"
+                <textarea
                   required
                   placeholder="Ví dụ: Tài liệu học tập của khóa học đầy đủ và chi tiết..."
                   className="form-input"
+                  rows={3}
                   value={editingEval.question_text || ''}
                   onChange={(e) => setEditingEval({ ...editingEval, question_text: e.target.value })}
+                  style={{ resize: 'vertical' }}
                 />
               </div>
 

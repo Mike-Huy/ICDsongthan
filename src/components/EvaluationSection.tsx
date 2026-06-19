@@ -272,14 +272,138 @@ export default function EvaluationSection() {
 
                   {/* Text Type */}
                   {q.question_type === 'text' && (
-                    <textarea
-                      className="form-input"
-                      rows={4}
-                      placeholder="Ý kiến hoặc đóng góp thêm của bạn..."
-                      value={answers[q.id] || ''}
-                      onChange={(e) => handleTextChange(q.id, e.target.value)}
-                      style={{ resize: 'vertical' }}
-                    />
+                    q.question_text.toLowerCase().includes('chủ đề đào tạo') ? (() => {
+                      const currentAnswer = String(answers[q.id] || '');
+                      const topics = [
+                        'Quản lý kho hàng nâng cao',
+                        'Vận tải và logistics quốc tế',
+                        'Hải quan và xuất nhập khẩu',
+                        'Quản lý chuỗi cung ứng',
+                        'Chuyển đổi số trong logistics',
+                        'Ứng dụng AI trong logistics',
+                        'Kỹ năng quản lý và lãnh đạo',
+                        'An toàn lao động kho bãi',
+                        'Phần mềm quản lý kho (WMS)',
+                        'Tiếng Anh chuyên ngành logistics',
+                      ];
+
+                      const selectedParts = currentAnswer.split(', ').map(s => s.trim()).filter(Boolean);
+                      const otherPart = selectedParts.find(p => p.startsWith('Khác: '));
+                      const otherText = otherPart ? otherPart.replace(/^Khác:\s*/, '') : '';
+                      const isOtherChecked = selectedParts.some(p => p.startsWith('Khác: ') || p === 'Khác');
+
+                      const handleCheckboxChange = (topic: string, checked: boolean) => {
+                        let newParts = selectedParts.filter(p => p !== topic && !p.startsWith('Khác: '));
+                        if (checked) {
+                          newParts.push(topic);
+                        }
+                        if (otherText.trim()) {
+                          newParts.push(`Khác: ${otherText.trim()}`);
+                        } else if (isOtherChecked) {
+                          newParts.push('Khác');
+                        }
+                        handleTextChange(q.id, newParts.join(', '));
+                      };
+
+                      const handleOtherTextChange = (text: string) => {
+                        let newParts = selectedParts.filter(p => !p.startsWith('Khác: ') && p !== 'Khác');
+                        if (text.trim()) {
+                          newParts.push(`Khác: ${text.trim()}`);
+                        } else if (isOtherChecked) {
+                          newParts.push('Khác');
+                        }
+                        handleTextChange(q.id, newParts.join(', '));
+                      };
+
+                      const handleOtherCheckboxChange = (checked: boolean) => {
+                        let newParts = selectedParts.filter(p => !p.startsWith('Khác: ') && p !== 'Khác');
+                        if (checked) {
+                          newParts.push(otherText.trim() ? `Khác: ${otherText.trim()}` : 'Khác');
+                        }
+                        handleTextChange(q.id, newParts.join(', '));
+                      };
+
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', marginTop: '0.5rem' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '0.5rem' }}>
+                            {topics.map(topic => {
+                              const isSelected = selectedParts.includes(topic);
+                              return (
+                                <label
+                                  key={topic}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.6rem',
+                                    cursor: 'pointer',
+                                    padding: '0.65rem 0.9rem',
+                                    borderRadius: 'var(--radius-sm)',
+                                    border: isSelected ? '1.5px solid var(--primary-400)' : '1px solid var(--neutral-200)',
+                                    backgroundColor: isSelected ? 'var(--primary-50)' : 'white',
+                                    fontSize: '0.9rem',
+                                    color: isSelected ? 'var(--primary-800)' : 'var(--neutral-600)',
+                                    fontWeight: isSelected ? 600 : 400,
+                                    transition: 'var(--transition-smooth)',
+                                  }}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={(e) => handleCheckboxChange(topic, e.target.checked)}
+                                    style={{ accentColor: 'var(--primary-500)' }}
+                                  />
+                                  {topic}
+                                </label>
+                              );
+                            })}
+                          </div>
+                          
+                          <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '0.6rem', 
+                            padding: '0.65rem 0.9rem', 
+                            borderRadius: 'var(--radius-sm)', 
+                            border: isOtherChecked ? '1.5px solid var(--primary-400)' : '1px solid var(--neutral-200)', 
+                            backgroundColor: isOtherChecked ? 'var(--primary-50)' : 'white',
+                            marginTop: '0.25rem'
+                          }}>
+                            <input
+                              type="checkbox"
+                              checked={isOtherChecked}
+                              onChange={(e) => handleOtherCheckboxChange(e.target.checked)}
+                              style={{ accentColor: 'var(--primary-500)' }}
+                            />
+                            <span style={{ fontSize: '0.9rem', color: isOtherChecked ? 'var(--primary-800)' : 'var(--neutral-600)', fontWeight: isOtherChecked ? 600 : 400, whiteSpace: 'nowrap' }}>Khác:</span>
+                            <input
+                              type="text"
+                              placeholder="Nhập chủ đề quan tâm khác của bạn..."
+                              value={otherText}
+                              onChange={(e) => handleOtherTextChange(e.target.value)}
+                              style={{
+                                border: 'none',
+                                borderBottom: '1px solid var(--neutral-300)',
+                                outline: 'none',
+                                backgroundColor: 'transparent',
+                                fontSize: '0.9rem',
+                                padding: '0.1rem 0.4rem',
+                                width: '100%',
+                                color: 'var(--neutral-800)'
+                              }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })() : (
+                      <textarea
+                        className="form-input"
+                        rows={4}
+                        placeholder="Ý kiến hoặc đóng góp thêm của bạn..."
+                        value={answers[q.id] || ''}
+                        onChange={(e) => handleTextChange(q.id, e.target.value)}
+                        style={{ resize: 'vertical' }}
+                      />
+                    )
                   )}
 
                   {/* Choice Type */}
