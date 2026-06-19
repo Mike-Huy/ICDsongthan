@@ -278,12 +278,12 @@ export default function EvaluationSection() {
                       ? currentAnswer.split(';; ').filter(s => s.trim())
                       : currentAnswer.split(', ').map(s => s.trim()).filter(Boolean);
 
-                    // Find if there's a "Khác" option using robust whole-word check
+                    // Find if there's a "Khác" option — strip trailing punctuation before matching
                     const isOtherOption = (opt: string) => {
-                      const normalized = opt.trim().toLowerCase();
-                      return normalized === 'khác' || 
-                             normalized.startsWith('khác ') || 
-                             normalized.endsWith(' khác') || 
+                      const normalized = opt.trim().toLowerCase().replace(/[:.!?,;]+$/, '');
+                      return normalized === 'khác' ||
+                             normalized.startsWith('khác ') ||
+                             normalized.endsWith(' khác') ||
                              normalized.includes(' khác ');
                     };
                     const otherOptionText = options.find(isOtherOption);

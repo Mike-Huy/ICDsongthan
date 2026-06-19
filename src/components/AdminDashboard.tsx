@@ -1025,6 +1025,15 @@ export default function AdminDashboard({ systemLogo, onLogoUpdate }: AdminDashbo
       return;
     }
 
+    // Helper to identify "Khác" option
+    const isOtherOption = (opt: string) => {
+      const normalized = opt.trim().toLowerCase();
+      return normalized === 'khác' || 
+             normalized.startsWith('khác ') || 
+             normalized.endsWith(' khác') || 
+             normalized.includes(' khác ');
+    };
+
     const data = evalSubmissions.map((s, idx) => {
       const row: Record<string, any> = {
         'STT': idx + 1,
@@ -1037,16 +1046,45 @@ export default function AdminDashboard({ systemLogo, onLogoUpdate }: AdminDashbo
       evalQuestions.forEach((eq) => {
         const ansVal = s.answers[String(eq.id)];
         
-        // Clean question text for column header
+        // Parse options if present
         const questionLines = eq.question_text.split('\n').map(l => l.trim()).filter(Boolean);
         const optionLines = questionLines.slice(1).filter(line => line.startsWith('-') || line.startsWith('*') || line.startsWith('•'));
         const cleanHeader = optionLines.length > 0 ? questionLines[0] : eq.question_text;
-        
-        if (eq.question_type === 'rating') {
-          row[cleanHeader] = ansVal ? `${ansVal}/5` : '';
+
+        if (optionLines.length > 0) {
+          // Checkbox list question: expand into multiple columns, one for each option
+          const options = optionLines.map(line => line.replace(/^[-*•]\s*/, '').trim());
+          const selectedParts = ansVal 
+            ? (String(ansVal).includes(';;') 
+                ? String(ansVal).split(';; ').map(p => p.trim()) 
+                : String(ansVal).split(', ').map(p => p.trim())) 
+            : [];
+
+          options.forEach((opt) => {
+            const colHeader = `${cleanHeader} - ${opt}`;
+            
+            if (isOtherOption(opt)) {
+              // Other option: find match and write custom text
+              const otherPart = selectedParts.find(p => p === opt || p.startsWith(`${opt}: `));
+              if (otherPart) {
+                const customText = otherPart.replace(new RegExp(`^${opt}:\\s*`), '');
+                row[colHeader] = customText === opt ? 'Có' : customText;
+              } else {
+                row[colHeader] = '';
+              }
+            } else {
+              // Regular option
+              const isSelected = selectedParts.includes(opt);
+              row[colHeader] = isSelected ? 'x' : '';
+            }
+          });
         } else {
-          // Replace our double-semicolon separator with comma for standard spreadsheet viewing
-          row[cleanHeader] = ansVal ? String(ansVal).replace(/;;\s*/g, ', ') : '';
+          // Normal text/rating question
+          if (eq.question_type === 'rating') {
+            row[cleanHeader] = ansVal ? `${ansVal}/5` : '';
+          } else {
+            row[cleanHeader] = ansVal || '';
+          }
         }
       });
 
@@ -1062,10 +1100,15 @@ export default function AdminDashboard({ systemLogo, onLogoUpdate }: AdminDashbo
       { wch: 28 }, // Họ Và Tên
       { wch: 22 }, // Thời Gian Nộp
     ];
-    // For each question column, set a wider column width
-    evalQuestions.forEach(() => {
-      cols.push({ wch: 35 });
-    });
+    
+    // Determine the columns based on the first row's keys to calculate widths
+    if (data.length > 0) {
+      const keys = Object.keys(data[0]).slice(4); // Skip STT, Mã NV, Họ Tên, Thời Gian
+      keys.forEach(() => {
+        cols.push({ wch: 30 }); // standard width for question/option columns
+      });
+    }
+    
     worksheet['!cols'] = cols;
 
     const workbook = XLSX.utils.book_new();
