@@ -89,7 +89,7 @@ const FALLBACK_QUESTIONS: Question[] = [
   }
 ];
 
-type Step = 'register' | 'testing' | 'result' | 'retry';
+type Step = 'register' | 'testing' | 'submitted1' | 'retry' | 'result';
 
 export default function QuizSection() {
   const [quiz, setQuiz] = useState<Quiz>(FALLBACK_QUIZ);
@@ -190,7 +190,7 @@ export default function QuizSection() {
   useEffect(() => { loadQuiz(); }, []);
 
   useEffect(() => {
-    if (step === 'testing' || step === 'retry') {
+    if (step === 'testing' || step === 'retry' || step === 'submitted1') {
       const initTime = initialTimeLeftRef.current || quiz.duration_minutes * 60;
       setTimeLeft(initTime);
       timerRef.current = setInterval(() => {
@@ -198,7 +198,8 @@ export default function QuizSection() {
           if (prev <= 1) {
             clearInterval(timerRef.current!);
             if (step === 'testing') submitQuizRef.current();
-            else submitRetryRef.current();
+            else if (step === 'retry') submitRetryRef.current();
+            // For 'submitted1': timer just stops at 0:00, retry button becomes disabled
             return 0;
           }
           return prev - 1;
@@ -260,7 +261,7 @@ export default function QuizSection() {
     setAnswers({});
   };
 
-  const handleResumeSession = () => {
+  const handleResumeSession = async () => {
     if (!resumeData) return;
     const savedTime = resumeData.time_left > 0 ? resumeData.time_left : quiz.duration_minutes * 60;
     initialTimeLeftRef.current = savedTime;
@@ -272,6 +273,21 @@ export default function QuizSection() {
       setRetryQuestionIndices(resumeData.retry_indices || []);
       setRetryAnswers((resumeData.retry_answers_json || {}) as Record<number, number>);
       setRetryCurrentIdx(resumeData.retry_current_idx || 0);
+    }
+    if (resumeData.step === 'submitted1') {
+      try {
+        const { data: sub } = await supabase
+          .from('onex_submissions')
+          .select('score, correct_answers, total_questions')
+          .eq('student_code', studentCode.trim())
+          .eq('quiz_id', quiz.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        if (sub) {
+          setScoreResult({ score: sub.score, correctAnswers: sub.correct_answers, totalQuestions: sub.total_questions });
+        }
+      } catch {}
     }
     setShowResumeModal(false);
     setResumeData(null);
@@ -345,7 +361,7 @@ export default function QuizSection() {
   };
 
   const handleSubmitQuiz = async () => {
-    if (timerRef.current) clearInterval(timerRef.current);
+    // Don't clear timer — it continues running so the student can use remaining time for retry
     setSubmitting(true);
     setSubmitError('');
 
@@ -372,11 +388,11 @@ export default function QuizSection() {
       });
       if (error) throw error;
 
-      // Mark session as completed
+      // Save step as 'submitted1' — session not yet completed, student may still retry
       if (sessionIdRef.current) {
         await supabase
           .from('onex_quiz_sessions')
-          .update({ is_completed: true, step: 'result' })
+          .update({ step: 'submitted1' })
           .eq('id', sessionIdRef.current);
       }
 
@@ -390,7 +406,9 @@ export default function QuizSection() {
       setSubmitting(false);
     }
     setScoreResult(results);
-    setStep('result');
+    // Preserve remaining time so 'submitted1' timer continues from where it left off
+    initialTimeLeftRef.current = timeLeftRef.current;
+    setStep('submitted1');
   };
   submitQuizRef.current = handleSubmitQuiz;
 
@@ -404,7 +422,8 @@ export default function QuizSection() {
     setRetryQuestionIndices(wrongIndices);
     setRetryAnswers({});
     setRetryCurrentIdx(0);
-    initialTimeLeftRef.current = quiz.duration_minutes * 60;
+    // Continue from remaining time — don't reset the timer
+    initialTimeLeftRef.current = timeLeftRef.current;
     saveSession({
       step: 'retry',
       retry_indices: wrongIndices,
@@ -764,7 +783,122 @@ export default function QuizSection() {
         </div>
       )}
 
-      {/* ── 3. RETRY ── */}
+      {/* ── 3. SUBMITTED1 — Kết quả lần 1, đồng hồ vẫn chạy ── */}
+      {step === 'submitted1' && (
+        <div className="glass-card card-body-pad" style={{ padding: '2.5rem' }}>
+          <style dangerouslySetInnerHTML={{ __html: `
+            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+            .q-circle-retry:hover { transform: scale(1.12); box-shadow: 0 4px 14px rgba(239,68,68,0.35); }
+          ` }} />
+
+          {/* Timer bar */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', padding: '0.75rem 1.25rem', borderRadius: 'var(--radius-md)', backgroundColor: timeLeft === 0 ? 'var(--error-bg)' : 'var(--primary-100)', border: `1px solid ${timeLeft === 0 ? 'var(--error)' : 'var(--primary-200)'}` }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: timeLeft === 0 ? 'var(--error)' : 'var(--primary-700)' }}>
+              {timeLeft === 0 ? 'Hết thời gian — Không thể làm lại lần 2' : 'Thời gian còn lại để làm lại lần 2'}
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: timeLeft < 60 ? 'var(--error-bg)' : 'var(--primary-200)', color: timeLeft < 60 ? 'var(--error)' : 'var(--primary-800)', padding: '0.4rem 0.9rem', borderRadius: 'var(--radius-full)', fontWeight: 'bold' }}>
+              <Clock size={15} />
+              <span style={{ fontFamily: 'monospace', fontSize: '1rem' }}>{formatTime(timeLeft)}</span>
+            </div>
+          </div>
+
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <div style={{ display: 'inline-flex', padding: '1.25rem', backgroundColor: scoreResult.score >= 5.0 ? 'var(--success-bg)' : 'var(--error-bg)', borderRadius: '50%', color: scoreResult.score >= 5.0 ? 'var(--success)' : 'var(--error)', marginBottom: '1.25rem' }}>
+              <Award size={48} />
+            </div>
+            <h2 style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>Kết Quả Lần 1</h2>
+            <p style={{ color: 'var(--neutral-500)', fontSize: '0.95rem' }}>Thí sinh: <strong>{fullname}</strong> ({studentCode})</p>
+
+            {submitError && (
+              <div style={{ backgroundColor: 'var(--error-bg)', color: 'var(--error)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', display: 'flex', gap: '0.5rem', alignItems: 'center', maxWidth: '500px', margin: '1rem auto 0', fontSize: '0.85rem', textAlign: 'left' }}>
+                <AlertCircle size={16} style={{ flexShrink: 0 }} />
+                <span>{submitError}</span>
+              </div>
+            )}
+          </div>
+
+          <div style={{ textAlign: 'center', margin: '1.5rem 0' }}>
+            <div style={{ margin: '0 auto', width: '150px', height: '150px', borderRadius: '50%', border: '8px solid var(--primary-200)', borderTopColor: scoreResult.score >= 5.0 ? 'var(--success)' : 'var(--primary-400)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', boxShadow: 'var(--shadow-lg)' }}>
+              <span style={{ fontSize: '3rem', fontWeight: 800, color: 'var(--neutral-800)', lineHeight: 1 }}>{scoreResult.score}</span>
+              <span style={{ fontSize: '0.85rem', color: 'var(--neutral-500)', fontWeight: 600, marginTop: '0.25rem' }}>Thang điểm 10</span>
+            </div>
+            <h3 style={{ color: scoreResult.score >= 5.0 ? 'var(--success)' : 'var(--primary-700)', marginTop: '1rem', marginBottom: '0.25rem', fontSize: '1.15rem' }}>
+              {scoreResult.score >= 8.0
+                ? 'Xuất sắc! Bạn nắm kiến thức logistics rất tốt.'
+                : scoreResult.score >= 5.0
+                  ? 'Đạt yêu cầu! Chúc mừng bạn đã hoàn thành bài thu hoạch.'
+                  : 'Cần cố gắng thêm! Bạn nên ôn tập lại kiến thức.'}
+            </h3>
+            <p style={{ fontSize: '0.9rem', color: 'var(--neutral-500)' }}>
+              Trả lời đúng: <strong>{scoreResult.correctAnswers}</strong> / <strong>{scoreResult.totalQuestions}</strong> câu hỏi
+            </p>
+          </div>
+
+          <hr style={{ border: 'none', borderTop: '1px solid var(--primary-200)', margin: '1.5rem 0' }} />
+
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ fontSize: '0.875rem', color: 'var(--neutral-500)', marginBottom: '1rem' }}>
+              {wrongIndicesInResult.length > 0
+                ? timeLeft > 0 ? 'Bấm vào câu đỏ để làm lại lần 2' : 'Hết thời gian — không thể làm lại'
+                : 'Tất cả câu trả lời đúng!'}
+            </p>
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+              {questions.map((q, idx) => {
+                const isCorrect = answers[idx] === q.correct_option_index;
+                const isClickable = !isCorrect && timeLeft > 0;
+                return (
+                  <div
+                    key={idx}
+                    className={isClickable ? 'q-circle-retry' : ''}
+                    title={isClickable ? `Câu ${idx + 1} — Bấm để làm lại lần 2` : `Câu ${idx + 1}`}
+                    onClick={() => isClickable && handleStartRetry()}
+                    style={{
+                      width: '68px', height: '68px', borderRadius: '50%',
+                      backgroundColor: isCorrect ? '#f0fdf4' : '#fef2f2',
+                      border: `3px solid ${isCorrect ? 'var(--success)' : 'var(--error)'}`,
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                      cursor: isClickable ? 'pointer' : 'default',
+                      transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                      userSelect: 'none',
+                      opacity: !isCorrect && timeLeft === 0 ? 0.5 : 1,
+                    }}
+                  >
+                    {isCorrect
+                      ? <CheckCircle2 size={22} style={{ color: 'var(--success)' }} />
+                      : <AlertCircle size={22} style={{ color: 'var(--error)' }} />}
+                    <span style={{ fontSize: '0.68rem', fontWeight: 700, color: isCorrect ? 'var(--success)' : 'var(--error)', marginTop: '0.15rem' }}>Câu {idx + 1}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '2rem', flexWrap: 'wrap' }}>
+            {wrongIndicesInResult.length > 0 && (
+              <button
+                onClick={handleStartRetry}
+                disabled={timeLeft === 0}
+                className="btn btn-primary"
+                style={{
+                  backgroundColor: timeLeft > 0 ? 'var(--error)' : 'var(--neutral-300)',
+                  color: '#ffffff',
+                  cursor: timeLeft === 0 ? 'not-allowed' : 'pointer',
+                  opacity: timeLeft === 0 ? 0.6 : 1,
+                }}
+                title={timeLeft === 0 ? 'Hết thời gian, không thể làm lại' : ''}
+              >
+                <RotateCcw size={16} /> Làm lại {wrongIndicesInResult.length} câu sai
+                {timeLeft === 0 && ' (Hết giờ)'}
+              </button>
+            )}
+            <button onClick={handleFullRetry} className="btn btn-outline">
+              <RefreshCw size={16} /> Làm lại từ đầu
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── 4. RETRY ── */}
       {step === 'retry' && retryQuestionIndices.length > 0 && (() => {
         const origIdx = retryQuestionIndices[retryCurrentIdx];
         const q = questions[origIdx];
@@ -939,7 +1073,7 @@ export default function QuizSection() {
         );
       })()}
 
-      {/* ── 4. RESULT ── */}
+      {/* ── 5. RESULT ── */}
       {step === 'result' && (
         <div className="glass-card card-body-pad" style={{ padding: '2.5rem' }}>
           <style dangerouslySetInnerHTML={{ __html: `
