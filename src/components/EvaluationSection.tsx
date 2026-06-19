@@ -276,8 +276,15 @@ export default function EvaluationSection() {
                     const currentAnswer = String(answers[q.id] || '');
                     const selectedParts = currentAnswer.split(', ').map(s => s.trim()).filter(Boolean);
 
-                    // Find if there's a "Khác" option
-                    const otherOptionText = options.find(opt => opt.toLowerCase().includes('khác'));
+                    // Find if there's a "Khác" option using robust whole-word check
+                    const isOtherOption = (opt: string) => {
+                      const normalized = opt.trim().toLowerCase();
+                      return normalized === 'khác' || 
+                             normalized.startsWith('khác ') || 
+                             normalized.endsWith(' khác') || 
+                             normalized.includes(' khác ');
+                    };
+                    const otherOptionText = options.find(isOtherOption);
                     
                     const handleCheckboxChange = (topic: string, checked: boolean) => {
                       let newParts = selectedParts.filter(p => p !== topic && !p.startsWith('Khác: ') && !p.startsWith(`${otherOptionText}: `));
@@ -316,42 +323,40 @@ export default function EvaluationSection() {
                     };
 
                     return (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', marginTop: '0.5rem' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '0.5rem' }}>
-                          {options.map(topic => {
-                            const isOther = otherOptionText && topic === otherOptionText;
-                            if (isOther) return null; // Render other option separately at the bottom
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
+                        {options.map(topic => {
+                          const isOther = otherOptionText && topic === otherOptionText;
+                          if (isOther) return null; // Render other option separately at the bottom
 
-                            const isSelected = selectedParts.includes(topic);
-                            return (
-                              <label
-                                key={topic}
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '0.6rem',
-                                  cursor: 'pointer',
-                                  padding: '0.65rem 0.9rem',
-                                  borderRadius: 'var(--radius-sm)',
-                                  border: isSelected ? '1.5px solid var(--primary-400)' : '1px solid var(--neutral-200)',
-                                  backgroundColor: isSelected ? 'var(--primary-50)' : 'white',
-                                  fontSize: '0.9rem',
-                                  color: isSelected ? 'var(--primary-800)' : 'var(--neutral-600)',
-                                  fontWeight: isSelected ? 600 : 400,
-                                  transition: 'var(--transition-smooth)',
-                                }}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  onChange={(e) => handleCheckboxChange(topic, e.target.checked)}
-                                  style={{ accentColor: 'var(--primary-500)' }}
-                                />
-                                {topic}
-                              </label>
-                            );
-                          })}
-                        </div>
+                          const isSelected = selectedParts.includes(topic);
+                          return (
+                            <label
+                              key={topic}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'flex-start',
+                                gap: '0.75rem',
+                                cursor: 'pointer',
+                                padding: '1rem 1.25rem',
+                                borderRadius: 'var(--radius-md)',
+                                border: isSelected ? '2px solid var(--primary-400)' : '1px solid var(--neutral-200)',
+                                backgroundColor: isSelected ? '#fffbeb' : 'white',
+                                fontSize: '0.95rem',
+                                color: isSelected ? 'var(--neutral-800)' : 'var(--neutral-600)',
+                                fontWeight: isSelected ? 600 : 400,
+                                transition: 'var(--transition-smooth)',
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={(e) => handleCheckboxChange(topic, e.target.checked)}
+                                style={{ accentColor: 'var(--primary-500)', marginTop: '0.2rem' }}
+                              />
+                              <span style={{ lineHeight: '1.4' }}>{topic}</span>
+                            </label>
+                          );
+                        })}
                         
                         {otherOptionText && (() => {
                           const defaultLabel = otherOptionText;
@@ -362,37 +367,48 @@ export default function EvaluationSection() {
                           return (
                             <div style={{ 
                               display: 'flex', 
-                              alignItems: 'center', 
+                              flexDirection: 'column',
                               gap: '0.6rem', 
-                              padding: '0.65rem 0.9rem', 
-                              borderRadius: 'var(--radius-sm)', 
-                              border: isOtherChecked ? '1.5px solid var(--primary-400)' : '1px solid var(--neutral-200)', 
-                              backgroundColor: isOtherChecked ? 'var(--primary-50)' : 'white',
-                              marginTop: '0.25rem'
+                              padding: '1rem 1.25rem', 
+                              borderRadius: 'var(--radius-md)', 
+                              border: isOtherChecked ? '2px solid var(--primary-400)' : '1px solid var(--neutral-200)', 
+                              backgroundColor: isOtherChecked ? '#fffbeb' : 'white',
+                              marginTop: '0.5rem',
+                              transition: 'var(--transition-smooth)',
                             }}>
-                              <input
-                                type="checkbox"
-                                checked={isOtherChecked}
-                                onChange={(e) => handleOtherCheckboxChange(e.target.checked)}
-                                style={{ accentColor: 'var(--primary-500)' }}
-                              />
-                              <span style={{ fontSize: '0.9rem', color: isOtherChecked ? 'var(--primary-800)' : 'var(--neutral-600)', fontWeight: isOtherChecked ? 600 : 400, whiteSpace: 'nowrap' }}>{defaultLabel}:</span>
-                              <input
-                                type="text"
-                                placeholder="Nhập chi tiết khác..."
-                                value={otherText === defaultLabel ? '' : otherText}
-                                onChange={(e) => handleOtherTextChange(e.target.value)}
-                                style={{
-                                  border: 'none',
-                                  borderBottom: '1px solid var(--neutral-300)',
-                                  outline: 'none',
-                                  backgroundColor: 'transparent',
-                                  fontSize: '0.9rem',
-                                  padding: '0.1rem 0.4rem',
-                                  width: '100%',
-                                  color: 'var(--neutral-800)'
-                                }}
-                              />
+                              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', cursor: 'pointer' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={isOtherChecked}
+                                  onChange={(e) => handleOtherCheckboxChange(e.target.checked)}
+                                  style={{ accentColor: 'var(--primary-500)', marginTop: '0.2rem' }}
+                                />
+                                <span style={{ fontSize: '0.95rem', color: isOtherChecked ? 'var(--neutral-800)' : 'var(--neutral-600)', fontWeight: isOtherChecked ? 600 : 400 }}>
+                                  {defaultLabel}
+                                </span>
+                              </label>
+                              
+                              {isOtherChecked && (
+                                <div style={{ paddingLeft: '1.75rem', marginTop: '0.25rem' }} className="fade-in">
+                                  <input
+                                    type="text"
+                                    placeholder="Vui lòng nhập thông tin chi tiết..."
+                                    value={otherText === defaultLabel ? '' : otherText}
+                                    onChange={(e) => handleOtherTextChange(e.target.value)}
+                                    style={{
+                                      border: 'none',
+                                      borderBottom: '2px solid var(--primary-300)',
+                                      outline: 'none',
+                                      backgroundColor: 'transparent',
+                                      fontSize: '0.95rem',
+                                      padding: '0.35rem 0',
+                                      width: '100%',
+                                      color: 'var(--neutral-800)',
+                                      fontWeight: 500,
+                                    }}
+                                  />
+                                </div>
+                              )}
                             </div>
                           );
                         })()}
