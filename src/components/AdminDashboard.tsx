@@ -36,6 +36,8 @@ interface Submission {
   total_questions: number;
   correct_answers: number;
   completed_at: string;
+  attempt_number?: number;
+  quiz_id?: string | number;
 }
 
 interface EvalQuestion {
@@ -129,6 +131,11 @@ export default function AdminDashboard({ systemLogo, onLogoUpdate }: AdminDashbo
   // Active quiz setting
   const [activeQuizId, setActiveQuizId] = useState<string | number | null>(null);
   const [activeQuizMsg, setActiveQuizMsg] = useState({ type: '', text: '' });
+
+  // Pass threshold setting
+  const [passThreshold, setPassThreshold] = useState<number>(5.0);
+  const [passThresholdInput, setPassThresholdInput] = useState<string>('5.0');
+  const [passThresholdMsg, setPassThresholdMsg] = useState({ type: '', text: '' });
 
   // Sync logo prop to local input
   useEffect(() => {
@@ -234,6 +241,29 @@ export default function AdminDashboard({ systemLogo, onLogoUpdate }: AdminDashbo
       setActiveQuizMsg({ type: 'success', text: 'Đã kích hoạt đề bài thành công! Người dùng sẽ làm đề này khi bấm vào bài thu hoạch hoặc quét QR.' });
     } catch (err: any) {
       setActiveQuizMsg({ type: 'error', text: `Lỗi khi lưu cài đặt: ${err.message}` });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ---------------- PASS THRESHOLD SETTING ----------------
+  const handleSavePassThreshold = async () => {
+    setPassThresholdMsg({ type: '', text: '' });
+    const val = parseFloat(passThresholdInput);
+    if (isNaN(val) || val < 0 || val > 10) {
+      setPassThresholdMsg({ type: 'error', text: 'Ngưỡng điểm phải là số từ 0 đến 10.' });
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('onex_settings')
+        .upsert({ key: 'pass_threshold', value: String(val) });
+      if (error) throw error;
+      setPassThreshold(val);
+      setPassThresholdMsg({ type: 'success', text: `Đã lưu ngưỡng điểm đạt: ${val}/10` });
+    } catch (err: any) {
+      setPassThresholdMsg({ type: 'error', text: `Lỗi khi lưu: ${err.message}` });
     } finally {
       setLoading(false);
     }
@@ -634,6 +664,20 @@ export default function AdminDashboard({ systemLogo, onLogoUpdate }: AdminDashbo
         .maybeSingle();
       if (activeQuizSetting?.value) setActiveQuizId(activeQuizSetting.value);
 
+      // 7b. Fetch Pass Threshold Setting
+      const { data: passThresholdSetting } = await supabase
+        .from('onex_settings')
+        .select('value')
+        .eq('key', 'pass_threshold')
+        .maybeSingle();
+      if (passThresholdSetting?.value) {
+        const val = parseFloat(passThresholdSetting.value);
+        if (!isNaN(val)) {
+          setPassThreshold(val);
+          setPassThresholdInput(String(val));
+        }
+      }
+
       // 7. Fetch Admin Users
       await fetchAdminUsers();
 
@@ -917,21 +961,57 @@ export default function AdminDashboard({ systemLogo, onLogoUpdate }: AdminDashbo
       return;
     }
 
-    const data = submissions.map((sub, idx) => ({
-      'STT': idx + 1,
-      'Mã Nhân Viên': sub.student_code,
-      'Họ Và Tên': sub.fullname,
-      'Điểm Số': sub.score,
-      'Số Câu Đúng': sub.correct_answers,
-      'Tổng Số Câu': sub.total_questions,
-      'Kết Quả': sub.score >= 5 ? 'Đạt' : 'Chưa đạt',
-      'Thời Gian Nộp Bài': new Date(sub.completed_at).toLocaleString('vi-VN'),
-    }));
+    // Group by student_code — pair attempt 1 and attempt 2 per student
+    type StudentEntry = { attempt1?: Submission; attempt2?: Submission };
+    const studentMap = new Map<string, StudentEntry>();
+
+    // Sort chronologically so later records overwrite earlier ones (keeps latest session)
+    const sorted = [...submissions].sort(
+      (a, b) => new Date(a.completed_at).getTime() - new Date(b.completed_at).getTime()
+    );
+
+    sorted.forEach(sub => {
+      const key = sub.student_code;
+      if (!studentMap.has(key)) studentMap.set(key, {});
+      const entry = studentMap.get(key)!;
+      if ((sub.attempt_number ?? 1) === 2) {
+        entry.attempt2 = sub;
+      } else {
+        entry.attempt1 = sub;
+      }
+    });
+
+    // If attempt1 is newer than attempt2, they belong to different sessions — discard the stale attempt2
+    studentMap.forEach(entry => {
+      if (entry.attempt1 && entry.attempt2) {
+        const t1 = new Date(entry.attempt1.completed_at).getTime();
+        const t2 = new Date(entry.attempt2.completed_at).getTime();
+        if (t1 > t2) entry.attempt2 = undefined;
+      }
+    });
+
+    const data = Array.from(studentMap.values()).map((entry, idx) => {
+      const base = entry.attempt1 ?? entry.attempt2!;
+      const finalScore = entry.attempt2?.score ?? entry.attempt1?.score ?? 0;
+      return {
+        'STT': idx + 1,
+        'Mã Nhân Viên': base.student_code,
+        'Họ Và Tên': base.fullname,
+        'Điểm Lần 1': entry.attempt1?.score ?? '',
+        'Đúng Lần 1': entry.attempt1 ? `${entry.attempt1.correct_answers}/${entry.attempt1.total_questions}` : '',
+        'Điểm Lần 2': entry.attempt2?.score ?? '',
+        'Đúng Lần 2': entry.attempt2 ? `${entry.attempt2.correct_answers}/${entry.attempt2.total_questions}` : '',
+        'Điểm Tổng Kết': finalScore,
+        'Kết Quả': finalScore >= passThreshold ? 'Đạt' : 'Chưa đạt',
+        'Thời Gian Nộp': new Date((entry.attempt2 ?? entry.attempt1!).completed_at).toLocaleString('vi-VN'),
+      };
+    });
 
     const worksheet = XLSX.utils.json_to_sheet(data);
     worksheet['!cols'] = [
       { wch: 6 }, { wch: 16 }, { wch: 28 },
-      { wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 22 },
+      { wch: 12 }, { wch: 13 }, { wch: 12 }, { wch: 13 },
+      { wch: 14 }, { wch: 12 }, { wch: 22 },
     ];
 
     const workbook = XLSX.utils.book_new();
@@ -1187,7 +1267,7 @@ export default function AdminDashboard({ systemLogo, onLogoUpdate }: AdminDashbo
                               </td>
                               <td style={{ padding: '0.75rem', textAlign: 'center' }}>{s.correct_answers} / {s.total_questions}</td>
                               <td style={{ padding: '0.75rem', textAlign: 'center' }}>
-                                <span className={`badge ${s.score >= 5.0 ? 'badge-success' : 'badge-primary'}`} style={{ fontSize: '0.85rem', padding: '0.2rem 0.5rem' }}>
+                                <span className={`badge ${s.score >= passThreshold ? 'badge-success' : 'badge-primary'}`} style={{ fontSize: '0.85rem', padding: '0.2rem 0.5rem' }}>
                                   {s.score}đ
                                 </span>
                               </td>
@@ -1691,7 +1771,62 @@ export default function AdminDashboard({ systemLogo, onLogoUpdate }: AdminDashbo
               </div>
             </div>
 
-            {/* Card 3: Password Configuration */}
+            {/* Card 3: Pass Threshold Configuration */}
+            <div className="glass-card" style={{ padding: '2rem' }}>
+              <h3 style={{ fontSize: '1.05rem', marginBottom: '0.5rem' }}>Ngưỡng Điểm Đạt / Không Đạt</h3>
+              <p style={{ fontSize: '0.75rem', color: 'var(--neutral-500)', marginBottom: '1.5rem' }}>
+                Điểm tối thiểu (thang 10) để học viên được đánh giá là <strong>Đạt</strong>. Áp dụng cho bảng kết quả và file Excel xuất ra.
+              </p>
+
+              <div style={{ borderTop: '1px solid var(--primary-200)', paddingTop: '1.5rem' }}>
+                {passThresholdMsg.text && (
+                  <div style={{
+                    backgroundColor: passThresholdMsg.type === 'success' ? 'var(--success-bg)' : 'var(--error-bg)',
+                    color: passThresholdMsg.type === 'success' ? 'var(--success)' : 'var(--error)',
+                    padding: '0.75rem 1rem',
+                    borderRadius: 'var(--radius-md)',
+                    marginBottom: '1rem',
+                    fontSize: '0.75rem'
+                  }}>
+                    {passThresholdMsg.text}
+                  </div>
+                )}
+
+                <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                  <label className="form-label">Ngưỡng điểm đạt (0 – 10) *</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <input
+                      type="number"
+                      min="0"
+                      max="10"
+                      step="0.5"
+                      className="form-input"
+                      style={{ maxWidth: '120px' }}
+                      value={passThresholdInput}
+                      onChange={(e) => setPassThresholdInput(e.target.value)}
+                    />
+                    <span style={{ fontSize: '0.85rem', color: 'var(--neutral-500)' }}>
+                      Hiện tại: <strong style={{ color: 'var(--primary-700)' }}>{passThreshold}/10</strong>
+                    </span>
+                  </div>
+                  <p style={{ fontSize: '0.7rem', color: 'var(--neutral-400)', marginTop: '0.4rem' }}>
+                    Điểm &ge; ngưỡng này → <strong style={{ color: 'var(--success)' }}>Đạt</strong> &nbsp;|&nbsp; Điểm &lt; ngưỡng → <strong style={{ color: 'var(--error)' }}>Chưa đạt</strong>
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleSavePassThreshold}
+                  className="btn btn-primary"
+                  style={{ fontSize: '0.75rem', width: '100%' }}
+                  disabled={loading}
+                >
+                  <Save size={16} /> Lưu ngưỡng điểm
+                </button>
+              </div>
+            </div>
+
+            {/* Card 4: Password Configuration */}
             <div className="glass-card" style={{ padding: '2rem' }}>
               <h3 style={{ fontSize: '1.05rem', marginBottom: '0.5rem' }}>Mật Khẩu Quản Trị</h3>
               <p style={{ fontSize: '0.75rem', color: 'var(--neutral-500)', marginBottom: '1.5rem' }}>Cập nhật mật khẩu bảo mật truy cập của tài khoản quản lý.</p>
