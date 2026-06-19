@@ -7,7 +7,7 @@ import LoginModal from './components/LoginModal';
 import AdminDashboard from './components/AdminDashboard';
 import {
   Compass, Award, Star, MessageSquare, Lock,
-  ShieldCheck, LogOut, QrCode, X, Home
+  ShieldCheck, LogOut, X, Home
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import './App.css';
@@ -23,7 +23,7 @@ function App() {
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const [adminUsername, setAdminUsername] = useState('');
   const [systemLogo, setSystemLogo] = useState<string | null>(null);
-  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [qrModalType, setQrModalType] = useState<'quiz' | 'evaluation' | null>(null);
 
   // Restore admin session after F5 / page reload
   useEffect(() => {
@@ -312,29 +312,11 @@ function App() {
                   </p>
 
                   <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                    <button onClick={() => setActiveView('quiz')} className="btn btn-primary" style={{ padding: '0.9rem 1.8rem', fontSize: '1rem' }}>
+                    <button onClick={() => setQrModalType('quiz')} className="btn btn-primary" style={{ padding: '0.9rem 1.8rem', fontSize: '1rem' }}>
                       Bài thu hoạch <Award size={18} />
                     </button>
-                    <button onClick={() => setActiveView('evaluation')} className="btn btn-secondary" style={{ padding: '0.9rem 1.8rem', fontSize: '1rem' }}>
+                    <button onClick={() => setQrModalType('evaluation')} className="btn btn-secondary" style={{ padding: '0.9rem 1.8rem', fontSize: '1rem' }}>
                       Đánh giá khóa học
-                    </button>
-                    <button 
-                      onClick={() => setIsQrModalOpen(true)} 
-                      className="btn btn-outline" 
-                      title="Quét QR làm bài bằng điện thoại"
-                      style={{ 
-                        padding: '0.9rem', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center', 
-                        borderColor: 'var(--primary-400)', 
-                        color: 'var(--primary-800)', 
-                        backgroundColor: 'rgba(254, 243, 199, 0.35)',
-                        aspectRatio: '1',
-                        minWidth: '46px'
-                      }}
-                    >
-                      <QrCode size={20} />
                     </button>
                   </div>
                 </div>
@@ -546,7 +528,7 @@ function App() {
         onLoginSuccess={handleLoginSuccess}
       />
 
-      {isQrModalOpen && (
+      {qrModalType && (
         <div style={{
           position: 'fixed',
           top: 0,
@@ -572,7 +554,7 @@ function App() {
             backgroundColor: '#ffffff'
           }}>
             <button 
-              onClick={() => setIsQrModalOpen(false)} 
+              onClick={() => setQrModalType(null)} 
               style={{ 
                 position: 'absolute', 
                 top: '1rem', 
@@ -593,9 +575,11 @@ function App() {
             >
               <X size={18} />
             </button>
-            <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: 'var(--neutral-850)', fontWeight: 800 }}>Quét Mã QR Làm Bài</h3>
+            <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: 'var(--neutral-850)', fontWeight: 800 }}>
+              {qrModalType === 'quiz' ? 'Quét QR Làm Bài Thu Hoạch' : 'Quét QR Đánh Giá Khóa Học'}
+            </h3>
             <p style={{ fontSize: '0.875rem', color: 'var(--neutral-500)', marginBottom: '1.75rem', lineHeight: 1.5 }}>
-              Sử dụng camera điện thoại hoặc Zalo để quét mã QR và truy cập hệ thống làm bài trực tuyến nhanh chóng.
+              Sử dụng camera điện thoại hoặc Zalo để quét mã QR và truy cập link trên điện thoại của bạn.
             </p>
             <div style={{
               display: 'inline-flex',
@@ -607,7 +591,7 @@ function App() {
               boxShadow: '0 8px 20px rgba(146, 64, 14, 0.05)'
             }}>
               <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`${window.location.origin}${window.location.pathname}?view=quiz`)}`}
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`${window.location.origin}${window.location.pathname}?view=${qrModalType}`)}`}
                 alt="QR Code Link"
                 style={{ width: '200px', height: '200px', display: 'block' }}
               />
@@ -619,10 +603,22 @@ function App() {
               fontWeight: 700,
               backgroundColor: 'var(--primary-100)',
               padding: '0.5rem 0.75rem',
-              borderRadius: 'var(--radius-sm)'
+              borderRadius: 'var(--radius-sm)',
+              marginBottom: '1.5rem'
             }}>
-              {`${window.location.origin}${window.location.pathname}?view=quiz`}
+              {`${window.location.origin}${window.location.pathname}?view=${qrModalType}`}
             </div>
+
+            <button 
+              onClick={() => {
+                setActiveView(qrModalType);
+                setQrModalType(null);
+              }}
+              className="btn btn-primary" 
+              style={{ width: '100%', fontSize: '0.95rem', padding: '0.75rem' }}
+            >
+              {qrModalType === 'quiz' ? 'Làm bài trên máy tính này' : 'Đánh giá trên máy tính này'}
+            </button>
           </div>
         </div>
       )}
